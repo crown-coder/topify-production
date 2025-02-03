@@ -1,0 +1,13 @@
+export { default as MainDashboard } from './MainDashboard';
+export { default as FundWallet } from './FundWallet';
+export { default as Transaction } from './Transaction';
+export { default as WalletToWallet } from './WalletToWallet';
+export { default as BuyAirtime } from './BuyAirtime';
+export { default as BuyData } from './BuyData';
+export { default as AirtimeToCash } from './AirtimeToCash';
+export { default as PayElectricityBill } from './PayElectricityBill';
+export { default as PayTvBill } from './PayTvBill';
+export { default as ResultChecker } from './ResultChecker';
+export { default as ReferralRewards } from './ReferralRewards';
+export { default as VirtualCard } from './VirtualCard';
+export { default as Settings } from './Settings';
