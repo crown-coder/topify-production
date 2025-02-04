@@ -29,7 +29,7 @@ const ResultChecker = () => {
                         <label htmlFor='amount' className='text-sm font-light'>Amount</label>
                         <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" value={2000} name='amount' readOnly />
                     </div>
-                    <button type="submit" className="flex-1 p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
+                    <button type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
                 </form>
             </CardLayout>
         )
@@ -51,7 +51,7 @@ const ResultChecker = () => {
                         <label htmlFor='amount' className='text-sm font-light'>Amount</label>
                         <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" value={2000} name='amount' readOnly />
                     </div>
-                    <button type="submit" className="flex-1 p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
+                    <button type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
                 </form>
             </CardLayout>
         )
@@ -73,7 +73,7 @@ const ResultChecker = () => {
                         <label htmlFor='amount' className='text-sm font-light'>Amount</label>
                         <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" value={2000} name='amount' readOnly />
                     </div>
-                    <button type="submit" className="flex-1 p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
+                    <button type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
                 </form>
             </CardLayout>
         )

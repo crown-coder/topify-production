@@ -4,6 +4,7 @@ import LoadingCard from "./LoadingCard";
 import SucessCard from "./SucessCard";
 import FailedCard from "./FailedCard";
 import Confirmation from "./Confirmation";
+import Confetti from "react-confetti";
 
 const ConfimCard = ({ data }) => {
   const { closeModal } = useModal();
@@ -18,7 +19,7 @@ const ConfimCard = ({ data }) => {
 
     // Simulate a transaction delay (e.g., 2 seconds)
     setTimeout(() => {
-      const isSuccess = Math.random() > 0.5; // Randomly simulate success or failure
+      const isSuccess = Math.random() > 0.4; // Randomly simulate success or failure
       setTransactionStatus(isSuccess ? "success" : "failed");
       setIsLoading(false); // Stop loading after the result
     }, 2000); // Delay of 2 seconds
@@ -30,7 +31,14 @@ const ConfimCard = ({ data }) => {
     }
 
     if (transactionStatus === "success") {
-      return <SucessCard closeModal={closeModal} />;
+      return (
+        <>
+          {/* Confetti Effect */}
+
+          <Confetti width={window.innerWidth} height={window.innerHeight} />
+          <SucessCard closeModal={closeModal} />
+        </>
+      );
     }
 
     if (transactionStatus === "failed") {
