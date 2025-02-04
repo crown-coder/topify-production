@@ -7,11 +7,35 @@ import Delete from "../../../assets/delete.png";
 import Bank from "../../../assets/bank.png";
 import { useModal } from '../../ModalContext'
 import CardLayout from "./Cards/CardLayout"
+import FinishCard from "./Cards/FinishCard";
+import Confetti from "react-confetti";
 
 const SettingsContainer = () => {
     const navigate = useNavigate();
 
     const { openModal, closeModal } = useModal()
+
+    const handleBankSucessCard = (e) => {
+        e.preventDefault();
+
+        openModal(
+            <CardLayout cardTitle="Details Update" closeModal={closeModal}>
+                <Confetti width={window.innerWidth} height={window.innerHeight} />
+                <FinishCard message="Your bank details have been updated successfully." />
+            </CardLayout>
+        );
+    }
+
+    const handlePinSuccessCard = (e) => {
+        e.preventDefault();
+
+        openModal(
+            <CardLayout cardTitle="Pin Update" closeModal={closeModal}>
+                <Confetti width={window.innerWidth} height={window.innerHeight} />
+                <FinishCard message="Your pin have been updated successfully." />
+            </CardLayout>
+        );
+    }
 
     const changeBankModal = () => {
         openModal(
@@ -31,7 +55,7 @@ const SettingsContainer = () => {
                     </div>
                     <div className="flex gap-2 mt-3">
                         <button className="bg-[#E0E0E0] rounded-md text-[#828282] p-2" onClick={closeModal}>Cancel</button>
-                        <button type="submit" className="flex-1 p-2 bg-[#4CACF0] rounded-md text-white font-bold">Update Details</button>
+                        <button type="submit" onClick={handleBankSucessCard} className="flex-1 p-2 bg-[#4CACF0] rounded-md text-white font-bold">Update Details</button>
                     </div>
                 </form>
             </CardLayout>
@@ -52,7 +76,7 @@ const SettingsContainer = () => {
                     </div>
                     <div className="flex gap-2 mt-3">
                         <button className="bg-[#E0E0E0] rounded-md text-[#828282] p-2" onClick={closeModal}>Cancel</button>
-                        <button type="submit" className="flex-1 p-2 bg-[#4CACF0] rounded-md text-white font-bold">Set new pin</button>
+                        <button type="submit" onClick={handlePinSuccessCard} className="flex-1 p-2 bg-[#4CACF0] rounded-md text-white font-bold">Set new pin</button>
                     </div>
                 </form>
             </CardLayout>

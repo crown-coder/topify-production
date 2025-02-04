@@ -6,12 +6,52 @@ import Waec from '../../assets/waec.png'
 import Nabtab from '../../assets/nabtap.png'
 import { useModal } from "../ModalContext"
 import CardLayout from './small-components/Cards/CardLayout'
+import Confetti from "react-confetti";
+import FinishCard from './small-components/Cards/FinishCard';
 
 const ResultChecker = () => {
 
     const [quantity, setQuantity] = useState()
 
     const { openModal, closeModal } = useModal();
+
+
+    const handleQuantityChange = (e) => {
+        setQuantity(e.target.value); // Update the state with the input value
+    };
+
+    const handleWaecSucessCard = (e) => {
+        e.preventDefault();
+
+        openModal(
+            <CardLayout cardTitle="WEAC Pin Purchase" closeModal={closeModal}>
+                <Confetti width={window.innerWidth} height={window.innerHeight} />
+                <FinishCard message={`You Have Successfully Purchase ${quantity} Waec Pins.`} />
+            </CardLayout>
+        );
+    }
+
+    const handleNecoSucessCard = (e) => {
+        e.preventDefault();
+
+        openModal(
+            <CardLayout cardTitle="NECO Pin Purchase" closeModal={closeModal}>
+                <Confetti width={window.innerWidth} height={window.innerHeight} />
+                <FinishCard message={`You Have Successfully Purchase ${quantity} NECO Pins.`} />
+            </CardLayout>
+        );
+    }
+
+    const handleNabtebSucessCard = (e) => {
+        e.preventDefault();
+
+        openModal(
+            <CardLayout cardTitle="NABTEB Pin Purchase" closeModal={closeModal}>
+                <Confetti width={window.innerWidth} height={window.innerHeight} />
+                <FinishCard message={`You Have Successfully Purchase ${quantity} WAEC Pins.`} />
+            </CardLayout>
+        );
+    }
 
     const waecModal = () => {
         openModal(
@@ -23,13 +63,13 @@ const ResultChecker = () => {
                     </div>
                     <div className='flex flex-col gap-2'>
                         <label htmlFor='quantity' className='text-sm font-light'>Quantity</label>
-                        <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" placeholder='Quantity' name='quantity' required />
+                        <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' value={quantity} onChange={handleQuantityChange} type="number" placeholder='Quantity' name='quantity' required />
                     </div>
                     <div className='flex flex-col gap-2'>
                         <label htmlFor='amount' className='text-sm font-light'>Amount</label>
                         <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" value={2000} name='amount' readOnly />
                     </div>
-                    <button type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
+                    <button onClick={handleWaecSucessCard} type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
                 </form>
             </CardLayout>
         )
@@ -45,13 +85,13 @@ const ResultChecker = () => {
                     </div>
                     <div className='flex flex-col gap-2'>
                         <label htmlFor='quantity' className='text-sm font-light'>Quantity</label>
-                        <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" placeholder='Quantity' name='quantity' required />
+                        <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' value={quantity} onChange={handleQuantityChange} type="number" placeholder='Quantity' name='quantity' required />
                     </div>
                     <div className='flex flex-col gap-2'>
                         <label htmlFor='amount' className='text-sm font-light'>Amount</label>
                         <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" value={2000} name='amount' readOnly />
                     </div>
-                    <button type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
+                    <button onClick={handleNecoSucessCard} type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
                 </form>
             </CardLayout>
         )
@@ -67,13 +107,13 @@ const ResultChecker = () => {
                     </div>
                     <div className='flex flex-col gap-2'>
                         <label htmlFor='quantity' className='text-sm font-light'>Quantity</label>
-                        <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" placeholder='Quantity' name='quantity' required />
+                        <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" value={quantity} onChange={handleQuantityChange} placeholder='Quantity' name='quantity' required />
                     </div>
                     <div className='flex flex-col gap-2'>
                         <label htmlFor='amount' className='text-sm font-light'>Amount</label>
                         <input className='p-2 rounded-lg border text-[#989898] text-sm font-light' type="number" value={2000} name='amount' readOnly />
                     </div>
-                    <button type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
+                    <button onClick={handleNabtebSucessCard} type="submit" className="w-full p-2 mt-3 bg-[#4CACF0] rounded-md text-white font-bold">Generate</button>
                 </form>
             </CardLayout>
         )
