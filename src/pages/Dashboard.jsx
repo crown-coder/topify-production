@@ -71,7 +71,7 @@ const Dashboard = () => {
                 </Routes>
                 {/* Modal onClick={closeModal} */}
                 {isModalOpen && (
-                    <div className='absolute top-0 w-full h-[100vh] bg-gray-400/50 z-50 flex justify-center items-center transition-all duration-100 '>
+                    <div className='absolute top-0 w-full h-full bg-gray-400/50 z-50 flex justify-center items-center transition-all duration-100 '>
                         {modalContent}
                     </div>
                 )}
