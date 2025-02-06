@@ -159,6 +159,119 @@ export const NAVIGATION_ITEMS = [
   },
 ];
 
+export const ADMIN_NAVIGATION_ITEMS = [
+  {
+    category: "Dashboard",
+    items: [
+      {
+        name: "Dashboard",
+        icon: LuLayoutDashboard,
+        route: "",
+        title: "dashboard",
+      },
+    ],
+  },
+  {
+    category: "Finance Management",
+    items: [
+      {
+        name: "User Funding/Debit",
+        icon: GiWallet,
+        route: "user-funding",
+        title: "user-funding",
+      },
+      {
+        name: "Transactions",
+        icon: GrTransaction,
+        route: "transactions",
+        title: "transactions",
+      },
+      {
+        name: "Analytics",
+        icon: AiOutlineTransaction,
+        route: "analytics",
+        title: "analytics",
+      },
+    ],
+  },
+  {
+    category: "Plan Management",
+    items: [
+      {
+        name: "Data Plans",
+        icon: BsTelephone,
+        route: "data-plans",
+        title: "data-plans",
+      },
+      {
+        name: "Airtime Plans",
+        icon: CiGlobe,
+        route: "airtime-plans",
+        title: "airtime-plans",
+      },
+      {
+        name: "TV plans",
+        icon: GiCycle,
+        route: "tv-plans",
+        title: "tv-plans",
+      },
+    ],
+  },
+  {
+    category: "Analytics & Services",
+    items: [
+      {
+        name: "Users",
+        icon: AiOutlineThunderbolt,
+        route: "users",
+        title: "users",
+      },
+      {
+        name: "Service Management",
+        icon: LuSquarePlay,
+        route: "service-management",
+        title: "service-management",
+      },
+      {
+        name: "Service Discounts",
+        icon: LuGraduationCap,
+        route: "service-discounts",
+        title: "service-discounts",
+      },
+      {
+        name: "Service Charges",
+        icon: LuGraduationCap,
+        route: "service-charges",
+        title: "service-charges",
+      },
+      {
+        name: "Referral & Promo",
+        icon: LuGraduationCap,
+        route: "referral-promo",
+        title: "referral-promo",
+      },
+      
+    ],
+  },
+  {
+    category: "More",
+    items: [
+      {
+        name: "Configuration",
+        icon: CiSettings,
+        route: "configuration",
+        title: "configuration",
+      },
+      {
+        name: "Log Out",
+        icon: CiLogout,
+        route: "logout",
+        title: "logout",
+      },
+    ],
+  },
+];
+
 export const transactionData = [
   {
     id: "01",

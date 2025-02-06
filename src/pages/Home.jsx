@@ -5,7 +5,8 @@ const Home = () => {
     return (
         <div>
             <h1>Welcome to the Hompage</h1>
-            <Link to="/dashboard">Go to Dashboad</Link>
+            <Link to="/dashboard">Go to User Dashboard</Link>
+            <Link to="/admin">Go to Admin Dashboard</Link>
         </div>
     )
 }
