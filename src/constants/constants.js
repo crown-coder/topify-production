@@ -204,10 +204,10 @@ export const ADMIN_NAVIGATION_ITEMS = [
         title: "data-plans",
       },
       {
-        name: "Airtime Plans",
+        name: "Data Type",
         icon: CiGlobe,
-        route: "airtime-plans",
-        title: "airtime-plans",
+        route: "data-type",
+        title: "data-type",
       },
       {
         name: "TV plans",

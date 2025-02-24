@@ -2,6 +2,7 @@ import React from "react";
 import { ADMIN_NAVIGATION_ITEMS } from "../../constants/constants";
 import { Link, useLocation } from "react-router-dom";
 import Logo from "../../assets/logo.png";
+import UserTag from "../../assets/tag-user.png"
 
 const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, closeModal, iconsOnly }) => {
   const location = useLocation();
@@ -19,6 +20,11 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, closeModal, iconsOnly }) => 
     >
       <div className="logo mb-6">
         <img src={Logo} width={50} height={42} alt="Logo" />
+      </div>
+
+      <div className={`bg-[#DD2020] py-1 px-2 rounded-md ${iconsOnly ? "mr-0" : "mr-10"} my-3 flex items-center gap-2`}>
+        <img src={UserTag} alt="User Tag" />
+        <h2 className={`text-[#FEFEFE] text-lg ${iconsOnly ? "hidden" : "block"}`}>Admin Panel</h2>
       </div>
 
       {ADMIN_NAVIGATION_ITEMS.map((category, index) => (

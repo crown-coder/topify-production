@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Route, Routes } from "react-router-dom"
 import {
-    AirtimePlans,
+    DataType,
     Analytics,
     Configuration,
     DataPlans,
@@ -17,6 +17,8 @@ import {
     UserFunding,
     Users
 } from "../components/Admin/index"
+
+import { WebsiteSettings, PaymentGateway, TransactionAPI, EmailConfig, AdvanceConfig } from '../components/Admin/small-components/SettingsSections/index'
 
 const AdminDashboard = () => {
 
@@ -46,7 +48,7 @@ const AdminDashboard = () => {
                     <Route path='transactions' element={<Transactions />} />
                     <Route path='analytics' element={<Analytics />} />
                     <Route path='data-plans' element={<DataPlans />} />
-                    <Route path='airtime-plans' element={<AirtimePlans />} />
+                    <Route path='data-type' element={<DataType />} />
                     <Route path='tv-plans' element={<TvPlans />} />
                     <Route path='users' element={<Users />} />
                     <Route path='service-management' element={<ServiceManagement />} />
@@ -54,6 +56,13 @@ const AdminDashboard = () => {
                     <Route path='service-charges' element={<ServiceCharges />} />
                     <Route path='referral-promo' element={<ReferralPromo />} />
                     <Route path='configuration' element={<Configuration />} />
+
+                    <Route path='configuration/website-settings' element={<WebsiteSettings />} />
+                    <Route path='configuration/payment-geteway' element={<PaymentGateway />} />
+                    <Route path='configuration/transaction-api' element={<TransactionAPI />} />
+                    <Route path='configuration/email-config' element={<EmailConfig />} />
+                    <Route path='configuration/advance-config' element={<AdvanceConfig />} />
+
                 </Routes>
             </div>
         </div>

@@ -1,7 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import { useModal } from '../../ModalContext';
 import KycCard from './Cards/KycCard';
 const Wellcome = () => {
+    const [balance, setBalance] = useState(null);
     const { openModal, closeModal } = useModal();
 
     const handleKYCModal = () => {
@@ -19,7 +22,9 @@ const Wellcome = () => {
                 </div>
                 <div className='flex mt-3 flex-col gap-1'>
                     <p className='text-[#828282] text-lg font-light'>My Balance</p>
-                    <h2 className='text-[#006CB8] text-3xl font-bold'>N0.00</h2>
+                    <h2 className='text-[#006CB8] text-3xl font-bold'>
+                        {balance !== null ? `N${balance}` : (<Skeleton width={80} height={20} baseColor="#FFFFFF" highlightColor="#E0E0E0" />)}
+                    </h2>
                 </div>
             </div>
         </div>
