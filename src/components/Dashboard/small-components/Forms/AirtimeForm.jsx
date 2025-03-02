@@ -1,10 +1,14 @@
 import React, { useState } from 'react'
 import Glo from '../../../../assets/glo.png'
 import Airtel from '../../../../assets/airtel.png'
+import { useModal } from '../../../ModalContext'
+import { MdCancel } from "react-icons/md";
 
 const AirtimeForm = ({ onSubmit }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [airtimeAmount, setAirtimeAmount] = useState('');
+
+    const { closeModal } = useModal();
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -13,7 +17,12 @@ const AirtimeForm = ({ onSubmit }) => {
 
     return (
         <div>
-            <h2 className='text-[#434343] font-normal text-lg'>TV Bill Payment</h2>
+            <div className='flex justify-between items-center'>
+                <h2 className='text-[#434343] font-normal text-lg'>TV Bill Payment</h2>
+                <button>
+                    <MdCancel onClick={closeModal} />
+                </button>
+            </div>
             <div className=''>
                 <h4 className='text-[10px] text-[#232323D9]'>Recent transactions</h4>
                 <div className='w-full flex gap-3 my-2'>

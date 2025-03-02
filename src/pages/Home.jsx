@@ -8,11 +8,13 @@ import OurServices from '../components/Home/OurServices'
 import Pricing from '../components/Home/Pricing'
 import Footer from '../components/Home/Footer'
 import FAQ from '../components/Home/FAQ'
+import Demo from '../components/Home/Demo'
 
 const Home = () => {
     return (
         <div>
             <Hero />
+            {/* <Demo /> */}
             <WhyChooseUs />
             <AboutUs />
             <Testimonial />

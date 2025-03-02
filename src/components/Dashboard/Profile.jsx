@@ -4,7 +4,7 @@ import { FaBell, FaChevronDown } from "react-icons/fa";
 import { motion } from "framer-motion";
 import ProfileCard from "./ProfileCard";
 
-const Profile = ({ setIsSidebarOpen, toggleIconsOnly }) => {
+const Profile = ({ setIsSidebarOpen, toggleIconsOnly, iconsOnly }) => {
     const [isCardVisible, setIsCardVisible] = useState(false);
 
     const toggleCardVisibility = () => {
@@ -17,8 +17,11 @@ const Profile = ({ setIsSidebarOpen, toggleIconsOnly }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 30 }}
             transition={{ duration: 0.5 }}
-            className="w-full flex items-center justify-between py-4 px-3 bg-white dark:bg-gray-800 rounded-lg relative"
+            className={`fixed top-2 right-2 z-10 bg-white dark:bg-gray-800 transition-all duration-100 flex justify-between items-center 
+        ${iconsOnly ? "lg:left-[80px] lg:w-[calc(100%-80px)]" : "lg:left-[240px] lg:w-[calc(100%-240px)]"} 
+        w-full py-4 px-3 rounded-lg`}
         >
+
             {/* Menu Icon */}
             <button
                 onClick={() => setIsSidebarOpen((prev) => !prev)}

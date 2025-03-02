@@ -5,6 +5,7 @@ import { ModalProvider } from './components/ModalContext';
 const Home = lazy(() => import('./pages/Home'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const NewHome = lazy(() => import('./pages/NewHome'));
 
 const App = () => {
   return (
@@ -16,6 +17,7 @@ const App = () => {
               <Route path='/' element={<Home />} />
               <Route path='/admin/*' element={<AdminDashboard />} />
               <Route path='/dashboard/*' element={<Dashboard />} />
+              <Route path='/new-home' element={<NewHome />} />
             </Routes>
           </Suspense>
         </Router>
