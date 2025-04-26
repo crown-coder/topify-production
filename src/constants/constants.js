@@ -9,7 +9,7 @@ import { AiOutlineThunderbolt } from "react-icons/ai";
 import { LuSquarePlay } from "react-icons/lu";
 import { LuGraduationCap } from "react-icons/lu";
 import { LiaAwardSolid } from "react-icons/lia";
-// import { CiCreditCard2 } from "react-icons/ci";
+import { CiCreditCard2 } from "react-icons/ci";
 import { CiSettings } from "react-icons/ci";
 import { CiLogout } from "react-icons/ci";
 
@@ -132,12 +132,12 @@ export const NAVIGATION_ITEMS = [
         route: "referral-rewards",
         title: "referral-rewards",
       },
-      // {
-      //   name: "Virtual Card",
-      //   icon: CiCreditCard2,
-      //   route: "virtual-card",
-      //   title: "virtual-card",
-      // },
+      {
+        name: "Virtual Card",
+        icon: CiCreditCard2,
+        route: "virtual-card",
+        title: "virtual-card",
+      },
     ],
   },
   {

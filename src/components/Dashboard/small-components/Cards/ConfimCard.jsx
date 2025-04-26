@@ -21,7 +21,7 @@ const ConfimCard = ({ data }) => {
     setTimeout(() => {
       const isSuccess = Math.random() > 0.4; // Randomly simulate success or failure
       setTransactionStatus(isSuccess ? "success" : "failed");
-      setIsLoading(false); // Stop loading after the result
+      setIsLoading(false); 
     }, 2000); // Delay of 2 seconds
   };
 

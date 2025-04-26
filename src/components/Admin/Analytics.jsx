@@ -11,7 +11,7 @@ const Analytics = () => {
 
     return (
         <div>
-            <div className='p-3 bg-white dark:bg-gray-800 w-full mt-2 rounded-xl flex flex-col gap-4'>
+            <div className='p-3 bg-white dark:bg-gray-800 w-full mt-2 rounded-xl flex flex-col gap-4 border'>
                 <div className='w-full flex justify-between items-center'>
                     <div className='flex gap-4'>
                         {Btns.map((btn, i) => (

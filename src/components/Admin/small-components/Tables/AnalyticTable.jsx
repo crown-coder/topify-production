@@ -59,8 +59,8 @@ const AnalyticTable = () => {
     };
 
     return (
-        <div className="w-full">
-            <div className="w-[1035px] overflow-x-auto">
+        <div className="w-full max-w-full overflow-hidden">
+            <div className="w-full overflow-x-auto">
                 <table className="min-w-[1200px] w-full border-collapse">
                     <thead className="bg-gray-50">
                         <tr className="text-center text-[#969a9b] text-[12px] border-t-8 border-b-8 rounded-lg border-[#f1f1f1]">

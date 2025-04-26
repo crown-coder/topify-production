@@ -57,7 +57,7 @@ const Table = () => {
     }
 
     return (
-        <div className='w-[1035px] overflow-x-scroll'>
+        <div className='w-full overflow-x-scroll'>
             <table className='w-full table-auto'>
                 <thead className='text-[#969a9b] text-left border-b-8 border-[#f1f1f1]'>
                     <tr className='bg-white rounded-lg'>

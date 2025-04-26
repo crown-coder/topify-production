@@ -36,8 +36,10 @@ const NavBar = () => {
                             </ul>
                         </nav>
                         <div className="flex gap-3 mb-4">
-                            <button className='py-2 px-4 rounded-lg border border-[#057DD126] shadow-sm text-[#057DD1] w-[50%]' onClick={() => setIsNavBarOpen(false)}>Login</button>
-                            <button className='py-2 px-4 rounded-lg border border-[#057DD1] shadow-sm bg-[#057DD1] text-white w-[50%]' onClick={() => setIsNavBarOpen(false)}>Register</button>
+                            <Link to="/login" className='py-2 px-4 rounded-lg border border-[#057DD126] shadow-sm text-[#057DD1] w-[50%]' onClick={() => setIsNavBarOpen(false)}>
+                                Login
+                            </Link>
+                            <Link to="/signup" className='py-2 px-4 rounded-lg border border-[#057DD1] shadow-sm bg-[#057DD1] text-white w-[50%]' onClick={() => setIsNavBarOpen(false)}>Register</Link>
                         </div>
                     </motion.div>
                 )}
@@ -54,8 +56,8 @@ const NavBar = () => {
                     </ul>
                 </nav>
                 <div className="flex items-center gap-3">
-                    <button className='py-1 px-3 rounded-lg border border-[#057DD126] shadow-sm text-[#057DD1]'>Login</button>
-                    <button className='py-1 px-3 rounded-lg border border-[#057DD1] shadow-sm bg-[#057DD1] text-white'>Register</button>
+                    <Link to="/login" className='py-1 px-3 rounded-lg border border-[#057DD126] shadow-sm text-[#057DD1]' >Login</Link>
+                    <Link to="/signup" className='py-1 px-3 rounded-lg border border-[#057DD1] shadow-sm bg-[#057DD1] text-white'>Register</Link>
                 </div>
             </div>
 

@@ -7,32 +7,35 @@ import MTN from "../../assets/MTN.png";
 import Button from "../../components/Dashboard/small-components/Button";
 import BuyDataCard from "./small-components/BuyDataCard";
 import MoreDataCard from "./small-components/Cards/MoreDataCard";
-
 import { useModal } from "../ModalContext";
 
 const BuyData = () => {
-    const [activeButton, setActiveButton] = useState("Daily"); // Determines content
-    const [activeNetwork, setActiveNetwork] = useState("MTN"); // Determines card background color
+    const [activeButton, setActiveButton] = useState("Daily");
+    const [activeNetwork, setActiveNetwork] = useState("MTN");
 
     const { openModal, closeModal } = useModal();
 
-    const modalContent = (() => {
-        if (activeNetwork === "MTN") {
-            return <MoreDataCard activeNetwork={activeNetwork} activeButton={activeButton} closeModal={closeModal} />;
-        } else if (activeNetwork === "Airtel") {
-            return <MoreDataCard activeNetwork={activeNetwork} activeButton={activeButton}  closeModal={closeModal} />;
-        } else if (activeNetwork === "Glo") {
-            return <MoreDataCard activeNetwork={activeNetwork} activeButton={activeButton}  closeModal={closeModal} />;
-        } else if (activeNetwork === "9Mobile") {
-            return <MoreDataCard activeNetwork={activeNetwork} activeButton={activeButton}  closeModal={closeModal} />;
-        } else {
-            return null;
-        }
-    })();
+    const networkIdMap = {
+        MTN: 1,
+        Airtel: 3,
+        Glo: 2,
+        "9Mobile": 4,
+    };
+
+    const mobileNetworkId = networkIdMap[activeNetwork];
+
+    const modalContent = (
+        <MoreDataCard
+            activeNetwork={activeNetwork}
+            activeButton={activeButton}
+            closeModal={closeModal}
+            mobileNetworkId={mobileNetworkId}
+        />
+    );
 
     const handleMoreData = () => {
-        openModal(modalContent)
-    }
+        openModal(modalContent);
+    };
 
     const networks = [
         { name: "MTN", image: MTN },
@@ -51,7 +54,6 @@ const BuyData = () => {
         "Annually",
     ];
 
-    // Get card background color based on active network
     const getNetworkColor = (network) => {
         switch (network) {
             case "MTN":
@@ -87,6 +89,7 @@ const BuyData = () => {
                         </h1>
                     </div>
                 </div>
+
                 {/* Network Selection */}
                 <div className="flex max-lg:flex-col lg:items-center gap-6">
                     <div className="flex max-lg:flex-col max-lg:items-center">
@@ -96,8 +99,8 @@ const BuyData = () => {
                                     key={network.name}
                                     onClick={() => setActiveNetwork(network.name)}
                                     className={`py-2 rounded-full font-medium transition ${activeNetwork === network.name
-                                        ? "scale-110"
-                                        : ""
+                                            ? "scale-110"
+                                            : ""
                                         }`}
                                 >
                                     <img
@@ -129,10 +132,14 @@ const BuyData = () => {
                             <BuyDataCard
                                 activeButton={activeButton}
                                 cardBgColor={getNetworkColor(activeNetwork)}
+                                activeNetwork={activeNetwork}
                             />
                         </div>
 
-                        <button className="w-[70%] my-4 py-4 text-white font-semibold text-lg rounded-lg bg-[#4CACF0]" onClick={handleMoreData}>
+                        <button
+                            className="w-[70%] my-4 py-4 text-white font-semibold text-lg rounded-lg bg-[#4CACF0]"
+                            onClick={handleMoreData}
+                        >
                             More Data
                         </button>
                     </div>

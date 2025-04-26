@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { useModal } from '../../ModalContext';
@@ -6,50 +7,88 @@ import Card from './Card';
 import KycCard from './Cards/KycCard';
 import Appstore from '../../../assets/appstore.png';
 import Playstore from '../../../assets/playstore.png';
-import { IoTrophyOutline } from "react-icons/io5";
-
+import { IoTrophyOutline, IoRefresh } from "react-icons/io5";
 import { BiHide } from "react-icons/bi";
 import { RxEyeOpen } from "react-icons/rx";
+import { MdVerified } from "react-icons/md";
 
 const Balance = () => {
-  const [balance, setBalance] = useState(null);
   const [isShowBalance, setIsShowBalance] = useState(true);
-  const [referralBalance, setReferralBalance] = useState(null);
-
-
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const { openModal, closeModal } = useModal();
+  const [isKYCCompleted, setIsKYCCompleted] = useState(false);
 
   const handleKYCModal = () => {
     openModal(
       <KycCard closeModal={closeModal} />
-    )
-  }
+    );
+  };
 
-  // let balance;
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get('/api/api2/user');
+      setUser(response.data);
+      setIsKYCCompleted(response.data.kyc_verified);
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-  // if (isShowBalance) {
-  //   balance = '₦' + 1000;
-  // } else {
-  //   balance = '****';
-  // }
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchUserData();
+  };
+
+  // Format balance for display
+  const formatBalance = (balance) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN'
+    }).format(balance).replace('NGN', '₦');
+  };
 
   return (
     <div className='p-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
-
       <div className='w-full flex justify-between items-center'>
         <div>
-          <h2 className='font-semibold text-lg mb-[2px] text-[#434343] dark:text-white'>Welcome Back, <span>Jeff</span></h2>
-          <p className='font-light text-sm text-[#E2B93B]'>Complete your KYS to enjoy all our services. <span className='text-blue-500 cursor-pointer underline' onClick={handleKYCModal}>Proceed</span></p>
+          <h2 className='font-semibold text-lg mb-[2px] text-[#434343] dark:text-white'>
+            Welcome Back, <span>{user?.name.split(' ')[0] || 'User'}</span>
+          </h2>
+          {isKYCCompleted ? (
+            <p className='flex items-center gap-1 italic text-green-500'>
+              <span className='text-xl'>
+                <MdVerified />
+              </span>
+              <span className='text-sm cursor-pointer'>
+                Verified User
+              </span>
+            </p>
+          ) : (
+            <p className='font-light text-sm text-[#E2B93B]'>
+              Complete your KYC to enjoy all our services.
+              <span className='text-blue-500 cursor-pointer underline' onClick={handleKYCModal}>Proceed</span>
+            </p>
+          )}
         </div>
         <div className='flex gap-2 max-lg:hidden'>
           <button className='cursor-pointer'>
-            <img src={Appstore} width={90} height={44} />
+            <img src={Appstore} width={90} height={44} alt="App Store" />
           </button>
           <button>
-            <img src={Playstore} width={90} height={44} />
+            <img src={Playstore} width={90} height={44} alt="Play Store" />
           </button>
         </div>
       </div>
+
       {/* cards container */}
       <div className='w-full grid gap-3 grid-cols-1 lg:grid-cols-3 mt-3'>
         <Card
@@ -58,12 +97,48 @@ const Balance = () => {
           icon={<IoTrophyOutline />}
           title="Main Balance"
           amount={
-            balance !== null ? `N${balance}` : <Skeleton width={80} height={20} baseColor="#4CACF0" highlightColor="#85D7FF" />
+            loading || refreshing ? (
+              <Skeleton width={80} height={20} baseColor="#4CACF0" highlightColor="#85D7FF" />
+            ) : (
+              isShowBalance ?
+                formatBalance(parseFloat(user?.wallet?.balance || 0)) :
+                '****'
+            )
           }
           button="Smart Earner"
           content={
+            <div className="flex items-center gap-2">
+              <button
+                className="text-2xl cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setIsShowBalance(!isShowBalance)}
+              >
+                {isShowBalance ? <BiHide /> : <RxEyeOpen />}
+              </button>
+              <button
+                className={`text-xl cursor-pointer hover:opacity-80 transition-opacity ${refreshing ? 'animate-spin' : ''}`}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                <IoRefresh />
+              </button>
+            </div>
+          }
+        />
+        <Card
+          title="Referral Balance"
+          amount={
+            loading ? (
+              <Skeleton width={80} height={20} baseColor="#FFFFFF" highlightColor="#E0E0E0" />
+            ) : (
+              isShowBalance ?
+                formatBalance(parseFloat(user?.wallet?.bonus_balance || 0)) :
+                '****'
+            )
+          }
+          button="Refer more people"
+          content={
             <button
-              className="text-2xl cursor-pointer"
+              className="text-2xl cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => setIsShowBalance(!isShowBalance)}
             >
               {isShowBalance ? <BiHide /> : <RxEyeOpen />}
@@ -71,20 +146,22 @@ const Balance = () => {
           }
         />
         <Card
-          title="Referral Balance"
-          amount={
-            referralBalance !== null ? `N${referralBalance.toFixed(2)}` : (
-              <Skeleton width={80} height={20} baseColor="#FFFFFF" highlightColor="#E0E0E0" />
-            )
+          className="font-normal text-lg"
+          justify="items-center"
+          btn="py-[3px] text-sm px-7 border border-blue-500 rounded-lg bg-white dark:text-black"
+          title="Support"
+          amount="Need some help?"
+          button="Contact Us"
+          content={
+            <div className='lg:hidden flex flex-col gap-4'>
+              <img src={Playstore} width={100} height={44} className='cursor-pointer' alt="Play Store" />
+              <img src={Appstore} width={100} height={44} className='cursor-pointer' alt="App Store" />
+            </div>
           }
-          button="Refer more people"
-          content={<button className='text-2xl cursor-pointer'><BiHide /></button>}
         />
-        <Card className="font-normal text-lg" justify="items-center" btn="py-[3px] text-sm px-7 border border-blue-500 rounded-lg bg-white dark:text-black" title="Support" amount="Need some help?" button="Contact Us" content={<div className='lg:hidden flex flex-col gap-4'><img src={Playstore} width={100} height={44} className='cursor-pointer' /><img src={Appstore} width={100} height={44} className='cursor-pointer' /></div>} />
       </div>
-
     </div>
-  )
-}
+  );
+};
 
-export default Balance
+export default Balance;

@@ -1,11 +1,32 @@
-import React from "react";
-import { FaRegLightbulb } from "react-icons/fa";
-import { FaLightbulb } from "react-icons/fa";
+import React, { useState } from "react";
+import axios from "axios";
+import { FaRegLightbulb, FaLightbulb, FaBell } from "react-icons/fa";
 import { CiLogout } from "react-icons/ci";
-import { FaBell } from "react-icons/fa";
 import { motion } from "framer-motion";
+import Cookies from "js-cookie";
 
-const ProfileCard = ({ isVisible, onToggleDarkMode, onLogout }) => {
+
+const ProfileCard = ({ isVisible, onToggleDarkMode }) => {
+
+    const handleLogout = async () => {
+        try {
+
+            localStorage.removeItem("token");
+            Cookies.remove("XSRF-TOKEN");
+
+            await axios.post("/api/logout");
+
+            // Redirect to home
+            window.location.href = "/";
+        } catch (error) {
+            console.error("Logout failed:", error);
+
+            localStorage.removeItem("token");
+            Cookies.remove("XSRF-TOKEN");
+            window.location.href = "/";
+        }
+    };
+
     if (!isVisible) return null;
 
     return (
@@ -14,22 +35,30 @@ const ProfileCard = ({ isVisible, onToggleDarkMode, onLogout }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="absolute top-12 right-0 mt-2 w-48 bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg shadow-lg p-4"
+            className="absolute top-12 right-0 mt-2 w-48 bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg shadow-lg p-4 z-50"
         >
             <div className="w-full grid grid-cols-2 gap-2">
-                <button className="w-full text-left py-2 px-3 rounded bg-slate-100 dark:bg-gray-800 shadow-sm flex justify-center hover:bg-gray-100 dark:hover:bg-gray-700">
+                <button
+                    className="w-full text-left py-2 px-3 rounded bg-slate-100 dark:bg-gray-800 shadow-sm flex justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+                    aria-label="Notifications"
+                >
                     <FaBell />
                 </button>
                 <button
                     onClick={onToggleDarkMode}
                     className="w-full text-left py-2 px-3 rounded bg-slate-100 dark:bg-gray-800 shadow-sm flex justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
+                    aria-label="Toggle dark mode"
                 >
-                    <FaRegLightbulb />
+                    {document.documentElement.classList.contains('dark') ?
+                        <FaLightbulb /> :
+                        <FaRegLightbulb />
+                    }
                 </button>
             </div>
             <button
-                onClick={onLogout}
+                onClick={handleLogout}
                 className="w-full text-left py-2 px-3 shadow-sm flex justify-center border border-red-300 rounded-lg text-red-300 mt-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-2xl"
+                aria-label="Logout"
             >
                 <CiLogout />
             </button>
