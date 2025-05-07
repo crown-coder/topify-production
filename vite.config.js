@@ -6,9 +6,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://app.smartdatalinks.ng',
+        target: 'https://sandbox.topify.ng/',
         changeOrigin: true,
-        secure: false, // if the API uses self-signed certs, keep this
+        secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
       }
     }

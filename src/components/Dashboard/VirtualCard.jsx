@@ -1,63 +1,130 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import CreateVirtualCard from './small-components/CreateVirtualCard';
 import VirtualCards from './small-components/VirtualCards';
 import KycModal from './small-components/KycModal';
+import OtpModal from './small-components/OtpModal';
 import { useModal } from '../ModalContext';
+import Cookies from 'js-cookie';
 
 const VirtualCard = () => {
-    const [kycCompleted, setKycCompleted] = useState(false);
-    const [hasVirtualCard, setHasVirtualCard] = useState(false);
-    const [isLoading, setIsLoading] = useState(true); // Add loading state
-    const { openModal } = useModal();
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showOtpModal, setShowOtpModal] = useState(false);
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const { openModal, closeModal } = useModal();
 
-    // Check user's KYC and card status 
-    useEffect(() => {
-        const checkUserStatus = async () => {
-            setIsLoading(true);
+    const isCookieExist = (cookieName) => {
+        const value = Cookies.get(cookieName);
+        return value !== undefined;
+    };
 
-            const userKycStatus = localStorage.getItem('kycCompleted') === 'true';
-            setKycCompleted(userKycStatus);
+    const sendOtpToEmail = async () => {
+        if (isSendingOtp) return;
 
-            const userHasCards = localStorage.getItem('hasVirtualCard') === 'true';
-            setHasVirtualCard(userHasCards);
+        setIsSendingOtp(true);
+        try {
+            await axios.post('/api/send-otp', {
+                email: user?.email
+            });
+            setShowOtpModal(true);
+            openModal(
+                <OtpModal
+                    onVerify={() => {
+                        closeModal();
+                        setShowOtpModal(false);
+                    }}
+                    onResend={sendOtpToEmail}
+                    onClose={() => {
+                        closeModal();
+                        setShowOtpModal(false);
+                    }}
+                />
+            );
+        } catch (error) {
+            console.error('Error sending OTP:', error);
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
 
-            // If KYC isn't completed, show the modal
-            if (!userKycStatus) {
+    const handleVerifyClick = () => {
+        if (!isCookieExist('otp_verified_token')) {
+            sendOtpToEmail();
+        }
+    };
+
+    const fetchUserData = async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get('/api/api2/user');
+            const userData = {
+                ...response.data,
+                kyc_verified: true // Hardcoded for development
+            };
+            setUser(userData);
+
+            if (userData.kyc_verified === false) {
                 openModal(
                     <KycModal
                         onSuccess={() => {
-                            localStorage.setItem('kycCompleted', 'true');
-                            setKycCompleted(true);
+                            fetchUserData();
                         }}
                     />
                 );
             }
-
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+        } finally {
             setIsLoading(false);
-        };
+        }
+    };
 
-        checkUserStatus();
-    }, [openModal]);
+    useEffect(() => {
+        fetchUserData();
+    }, []);
 
     if (isLoading) {
-        // Show loading state while checking user status
-        return <div>Loading...</div>;
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
     }
 
-    if (!kycCompleted) {
-        // While checking status or if KYC isn't done, show loading or nothing
-        // The KYC modal will be shown by the useEffect
+    if (!user) {
+        return <div className="text-center py-10">Error loading user data</div>;
+    }
+
+    if (!user.kyc_verified) {
         return null;
     }
 
-    // This is the key change - we now properly check for hasVirtualCard after kycCompleted
-    return hasVirtualCard ? <VirtualCards /> : (
-        <CreateVirtualCard
-            onCardCreated={() => {
-                localStorage.setItem('hasVirtualCard', 'true');
-                setHasVirtualCard(true);
-            }}
-        />
+    if (!user.cardholder_id) {
+        return (
+            <CreateVirtualCard
+                onCardCreated={() => {
+                    fetchUserData();
+                }}
+            />
+        );
+    }
+    
+    return (
+        <>
+            {isCookieExist('otp_verified_token') ? (
+                <VirtualCards />
+            ) : (
+                <div className="text-center py-10">
+                    <button
+                        onClick={handleVerifyClick}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        Verify Identity to View Cards
+                    </button>
+                </div>
+            )}
+        </>
     );
 };
 

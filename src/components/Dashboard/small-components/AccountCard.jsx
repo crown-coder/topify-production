@@ -15,7 +15,7 @@ const AccountCard = ({ className, bankIcon, bankName, accountName, accountNumber
     }
 
     return (
-        <div className={`relative p-4 max-lg:p-2 flex max-lg:flex-col gap-5 lg:gap-4 lg:p-[10px] rounded-2xl ${className}`}>
+        <div className={`relative p-4 max-lg:p-2 flex max-lg:flex-col gap-5 lg:gap-4 lg:p-[10px] rounded-2xl ${className || 'bg-blue-800'}`}>
             <div className={`rounded-full ${iconBack}`}>
                 <img src={bankIcon} className={`max-lg:w-[40px] max-lg:h-[40px] ${iconStyle}`} />
             </div>

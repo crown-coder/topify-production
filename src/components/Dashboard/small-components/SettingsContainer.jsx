@@ -39,7 +39,7 @@ const SettingsContainer = () => {
 
     const changeBankModal = () => {
         openModal(
-            <CardLayout cardTitle="Change Bank Details" closeModal={closeModal}>
+            <CardLayout cardTitle="Add Bank Details" closeModal={closeModal}>
                 <form className="flex flex-col">
                     <div className='flex flex-col gap-2'>
                         <label htmlFor='account-name' className='text-sm font-light'>Account name</label>
@@ -109,7 +109,7 @@ const SettingsContainer = () => {
                 />
                 <SettingsCard
                     className="bg-[#C2D9EA] text-[#006CB8]"
-                    title="Change bank details"
+                    title="Add bank details"
                     imageUrl={Bank}
                     onClick={changeBankModal}
                 />
