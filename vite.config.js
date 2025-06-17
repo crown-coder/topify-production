@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://sandbox.topify.ng/',
+        target: 'https://app.topify.ng/',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
@@ -14,3 +14,5 @@ export default defineConfig({
     }
   }
 })
+
+// https://sandbox.topify.ng/

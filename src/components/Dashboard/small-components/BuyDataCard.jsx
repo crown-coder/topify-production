@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import MultiCard from "./Cards/MultiCard";
 import PlainCard from "./Cards/PlainCard";

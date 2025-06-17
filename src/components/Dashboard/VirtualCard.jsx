@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import CreateVirtualCard from './small-components/CreateVirtualCard';
 import VirtualCards from './small-components/VirtualCards';
@@ -109,7 +109,7 @@ const VirtualCard = () => {
             />
         );
     }
-    
+
     return (
         <>
             {isCookieExist('otp_verified_token') ? (

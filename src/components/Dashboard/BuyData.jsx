@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import NineMobile from "../../assets/9mobile.png";
 import Airtel from "../../assets/Airtel.png";

@@ -162,7 +162,7 @@ const CardDetails = () => {
                     <TbArrowLeft size={18} /> Back to Cards
                 </button>
             </div>
-            <div className="w-full grid grid-cols-2 gap-3 bg-white rounded-lg p-3">
+            <div className="w-full grid grid-cols-2 max-lg:grid-cols-1 gap-3 bg-white rounded-lg p-3">
                 <div className={`w-full h-fit rounded-xl ${card.card_currency === 'NGN' ? 'bg-blue-500' : 'bg-blue-950'} p-4 text-white`}>
                     <div className="flex justify-between items-center mb-2">
                         <h1 className="text-xl font-light">

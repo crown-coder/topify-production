@@ -7,13 +7,15 @@ import PropTypes from 'prop-types';
 
 const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) => {
     const [amount, setAmount] = useState('');
+    const [withdrawalType, setWithdrawalType] = useState('wallet');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState({ text: '', isSuccess: false });
     const [cardBalance, setCardBalance] = useState(0);
     const [exchangeRate, setExchangeRate] = useState(1693);
+    const [userBanks, setUserBanks] = useState([]);
+    const [selectedBank, setSelectedBank] = useState('');
+    const [isLoadingBanks, setIsLoadingBanks] = useState(false);
     const MINIMUM_AMOUNT = 500;
-
-    console.log(cardId)
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -55,6 +57,42 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
             setMessage({ text: 'Card not specified', isSuccess: false });
         }
     }, [cardId, cardCurrency, currentCardId]);
+
+    // Fetch user banks when withdrawal type changes to 'bank'
+    useEffect(() => {
+        const fetchUserBanks = async () => {
+            if (withdrawalType !== 'bank') return;
+
+            setIsLoadingBanks(true);
+            try {
+                const xsrfToken = Cookies.get('XSRF-TOKEN');
+                if (!xsrfToken) throw new Error('Authentication token missing');
+
+                const config = {
+                    headers: { 'X-XSRF-TOKEN': xsrfToken },
+                    withCredentials: true
+                };
+
+                const response = await axios.get('/api/bank-accounts', config);
+                if (response.data?.data?.length > 0) {
+                    setUserBanks(response.data.data);
+                    setSelectedBank(response.data.data[0].id); // Select first bank by default
+                } else {
+                    setMessage({ text: 'No bank accounts found. Please add a bank account first.', isSuccess: false });
+                }
+            } catch (err) {
+                console.error('Error fetching bank accounts:', err);
+                setMessage({
+                    text: err.response?.data?.message || 'Failed to load bank accounts',
+                    isSuccess: false
+                });
+            } finally {
+                setIsLoadingBanks(false);
+            }
+        };
+
+        fetchUserBanks();
+    }, [withdrawalType]);
 
     // Auto-dismiss success messages after 5 seconds
     useEffect(() => {
@@ -99,6 +137,14 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
             return false;
         }
 
+        if (withdrawalType === 'bank' && !selectedBank) {
+            setMessage({
+                text: 'Please select a bank account',
+                isSuccess: false
+            });
+            return false;
+        }
+
         return true;
     };
 
@@ -119,13 +165,23 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
                 withCredentials: true
             };
 
+            const payload = {
+                type: withdrawalType,
+                amount: amount.toString(),
+                card_id: cardId
+            };
+
+            if (withdrawalType === 'bank') {
+                const selectedBankDetails = userBanks.find(bank => bank.id === selectedBank);
+                if (!selectedBankDetails) throw new Error('Selected bank not found');
+
+                payload.bankCode = selectedBankDetails.bank_code;
+                payload.bankAccNo = selectedBankDetails.account_number;
+            }
+
             const response = await axios.post(
                 '/api/virtual-cards/payout',
-                {
-                    type: 'wallet',
-                    amount: amount.toString(),
-                    card_id: cardId
-                },
+                payload,
                 config
             );
 
@@ -170,6 +226,29 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
 
     const calculateDollarAmount = () => {
         return amount ? (parseFloat(amount) / exchangeRate).toFixed(2) : '0.00';
+    };
+
+    const getSelectedBankDetails = () => {
+        if (!selectedBank || !userBanks.length) return null;
+        const bank = userBanks.find(b => b.id === selectedBank);
+        if (!bank) return null;
+
+        return (
+            <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
+                <div className="flex justify-between">
+                    <span className="text-gray-600">Bank:</span>
+                    <span className="font-medium">{bank.bank_name}</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                    <span className="text-gray-600">Account Number:</span>
+                    <span className="font-medium">{bank.account_number}</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                    <span className="text-gray-600">Account Name:</span>
+                    <span className="font-medium">{bank.account_name}</span>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -230,6 +309,59 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
                     </div>
                 </div>
 
+                <div className="mb-6">
+                    <label htmlFor="withdrawalType" className="block text-gray-700 text-sm font-medium mb-2">
+                        Withdrawal Method
+                    </label>
+                    <div className="relative">
+                        <select
+                            id="withdrawalType"
+                            value={withdrawalType}
+                            onChange={(e) => setWithdrawalType(e.target.value)}
+                            className="block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="wallet">Wallet</option>
+                            <option value="bank">Bank Account</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <BsBank2 className="text-gray-400" />
+                        </div>
+                    </div>
+                </div>
+
+                {withdrawalType === 'bank' && (
+                    <div className="mb-4">
+                        <label htmlFor="bankAccount" className="block text-gray-700 text-sm font-medium mb-2">
+                            Select Bank Account
+                        </label>
+                        {isLoadingBanks ? (
+                            <div className="p-4 text-center text-gray-500">
+                                Loading bank accounts...
+                            </div>
+                        ) : userBanks.length > 0 ? (
+                            <>
+                                <select
+                                    id="bankAccount"
+                                    value={selectedBank}
+                                    onChange={(e) => setSelectedBank(e.target.value)}
+                                    className="block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    {userBanks.map(bank => (
+                                        <option key={bank.id} value={bank.id}>
+                                            {bank.bank_name} - {bank.account_number}
+                                        </option>
+                                    ))}
+                                </select>
+                                {getSelectedBankDetails()}
+                            </>
+                        ) : (
+                            <div className="p-3 bg-yellow-50 text-yellow-700 rounded-md text-sm">
+                                No bank accounts found. Please add a bank account first.
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {cardCurrency !== "NGN" && (
                     <div className="mb-6 space-y-3">
                         <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
@@ -252,10 +384,10 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
 
                 <button
                     type="submit"
-                    disabled={isSubmitting || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) < MINIMUM_AMOUNT}
-                    className={`w-full py-3 px-4 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${isSubmitting || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) < MINIMUM_AMOUNT
-                            ? 'bg-blue-400 cursor-not-allowed'
-                            : 'bg-[#4CACF0] hover:bg-[#3A9BDE]'
+                    disabled={isSubmitting || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) < MINIMUM_AMOUNT || (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))}
+                    className={`w-full py-3 px-4 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${isSubmitting || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) < MINIMUM_AMOUNT || (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))
+                        ? 'bg-blue-400 cursor-not-allowed'
+                        : 'bg-[#4CACF0] hover:bg-[#3A9BDE]'
                         }`}
                 >
                     {isSubmitting ? (

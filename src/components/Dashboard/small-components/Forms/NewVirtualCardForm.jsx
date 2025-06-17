@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { TbCurrencyNaira } from 'react-icons/tb';
 import { FaDollarSign } from 'react-icons/fa';
 import axios from 'axios';
@@ -7,12 +7,50 @@ import Cookies from 'js-cookie';
 const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, closeModal }) => {
     const [cardType, setCardType] = useState(initialCardType);
     const [isCreating, setIsCreating] = useState(false);
+    const [userWalletBalanceNGN, setUserWalletBalanceNGN] = useState(0)
+    const [exchangeRate, setExchangeRate] = useState(1693)
     const [error, setError] = useState(null);
 
-    const userWalletBalanceNGN = 50000;  // ₦50,000
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                const xsrfToken = Cookies.get('XSRF-TOKEN');
+                if (!xsrfToken) {
+                    throw new Error('Authentication token missing')
+                }
+                const config = {
+                    headers: {
+                        'X-XSRF-TOKEN': xsrfToken,
+                    },
+                    withCredentials: true
+                }
+
+                const [walletResponse, rateResponse] = await Promise.all([
+                    axios.get('/api/api2/user', config),
+                    axios.post('/api/getExchageRates')
+                ])
+
+                setUserWalletBalanceNGN(walletResponse.data?.wallet?.balance || 0)
+                setExchangeRate(rateResponse.data?.data?.NGN ?? 1693)
+            } catch (err) {
+                console.error('Error fetching initial data:', err)
+            }
+        }
+
+        fetchInitialData()
+    }, [])
+
+    const formatBalance = (balance) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN'
+        }).format(balance).replace('NGN', '₦')
+    }
+
+    // const userWalletBalanceNGN = 50000;  // ₦50,000
 
     // Mock exchange rate (1 USD = 1500 NGN)
-    const exchangeRate = 1500;
+    // const exchangeRate = 1500;
 
     const [formData, setFormData] = useState({
         fundingAmount: '',
@@ -68,6 +106,8 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
                 requestData.funding_amount = calculateDollarEquivalent(formData.fundingAmount);
             }
 
+
+            console.log(requestData)
             // Get XSRF token from cookies
             const xsrfToken = Cookies.get('XSRF-TOKEN');
 
@@ -89,8 +129,9 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
             closeModal();
 
         } catch (error) {
-            console.error('Error creating card:', error);
+            console.error('Error creating card:', error.response?.data);
             setError(error.response?.data?.message || error.message || 'Failed to create card');
+
         } finally {
             setIsCreating(false);
         }
@@ -123,7 +164,7 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
 
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm font-medium">Wallet Balance:</p>
-                <p className="text-lg font-semibold">₦{userWalletBalanceNGN.toLocaleString()}</p>
+                <p className="text-lg font-semibold">{formatBalance(parseFloat(userWalletBalanceNGN))}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">

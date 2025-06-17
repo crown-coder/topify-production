@@ -1,6 +1,4 @@
-import React from 'react'
 import Pana from '../assets/home/pana.png'
-
 const AuthPageLayout = ({ children }) => {
     return (
         <section className='h-dvh w-full relative flex items-center justify-center'>
