@@ -11,6 +11,14 @@ import CardFundingForm from './Forms/CardFundingForm.jsx';
 import CardWithdrawalForm from './Forms/CardWithdrawalForm.jsx';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import {
+    FaMoneyBillWave,
+    FaMoneyCheckAlt,
+    FaSnowflake,
+    FaTrashAlt,
+    FaCheckCircle
+} from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 const CardDetails = () => {
     const { cardId } = useParams();
@@ -20,6 +28,7 @@ const CardDetails = () => {
     const [card, setCard] = useState(location.state || null);
     const [copiedField, setCopiedField] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [currentCardId, setCurrentCardId] = useState(null)
 
@@ -55,6 +64,7 @@ const CardDetails = () => {
             };
 
             setCard(updatedCard);
+            // console.log('Card details fetched:', updatedCard);
         } catch (err) {
             setError('Failed to load card');
         } finally {
@@ -104,6 +114,41 @@ const CardDetails = () => {
                 />
             </CardLayout>
         );
+    };
+    // Get XSRF token from cookies
+    const xsrfToken = Cookies.get('XSRF-TOKEN');
+
+    const handleFreezeToggle = async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.post(
+                '/api/virtual-cards/toggle-freeze',
+                {
+                    is_active: card.is_active ? 0 : 1, 
+                    card_id: card.card_id,
+                    currency: card.card_currency
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': xsrfToken,
+                    },
+                    withCredentials: true,
+                }
+            );
+
+            // Handle success
+            toast.success(`Card ${card.is_active ? 'frozen' : 'unfrozen'} successfully`);
+
+            // Update your card state (implementation depends on your state management)
+            updateCardStatus(!card.is_active);
+
+        } catch (error) {
+            console.error('Error toggling freeze status:', error);
+            toast.error(`Failed to ${card.is_active ? 'freeze' : 'unfreeze'} card`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleDeleteCard = () => {
@@ -210,10 +255,46 @@ const CardDetails = () => {
                     </div>
                 </div>
                 <div>
-                    <div className="grid grid-cols-3 gap-2">
-                        <button onClick={handleFunding} className="bg-blue-700 text-white px-4 py-2 rounded-lg">Fund</button>
-                        <button onClick={handleWithdraw} className="bg-yellow-700 text-white px-4 py-2 rounded-lg">Withdraw</button>
-                        <button onClick={handleDeleteCard} className="bg-red-600 text-white px-4 py-2 rounded-lg">Delete</button>
+                    <div className="grid grid-cols-4 gap-2">
+                        <button
+                            onClick={handleFunding}
+                            className="flex items-center justify-center gap-2 text-blue-700 border py-2 rounded-md bg-gray-50 transition-all duration-75 hover:bg-gray-100"
+                        >
+                            <FaMoneyBillWave className="text-lg" />
+                            Fund
+                        </button>
+
+                        <button
+                            onClick={handleWithdraw}
+                            className="flex items-center justify-center gap-2 text-orange-500 border py-2 rounded-md bg-gray-50 transition-all duration-75 hover:bg-gray-100"
+                        >
+                            <FaMoneyCheckAlt className="text-lg" />
+                            Withdraw
+                        </button>
+
+                        <button
+                            onClick={handleFreezeToggle}
+                            disabled={isLoading}
+                            className={`flex items-center justify-center gap-2 ${card.is_active ? 'text-blue-500' : 'text-green-500'
+                                } border py-2 rounded-md bg-gray-50 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50`}
+                        >
+                            {isLoading ? (
+                                <span className="animate-spin">🌀</span>
+                            ) : card.is_active ? (
+                                <FaSnowflake className="text-lg" />
+                            ) : (
+                                <FaCheckCircle className="text-lg" />
+                            )}
+                            {card.is_active ? 'Freeze' : 'Unfreeze'}
+                        </button>
+
+                        <button
+                            onClick={handleDeleteCard}
+                            className="flex items-center justify-center gap-2 text-red-600 border py-2 rounded-md bg-gray-50 transition-all duration-75 hover:bg-gray-100"
+                        >
+                            <FaTrashAlt className="text-lg" />
+                            Delete
+                        </button>
                     </div>
                     <div className="bg-white rounded-lg shadow p-6">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800">Card Details</h3>
@@ -224,16 +305,18 @@ const CardDetails = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Currency</p>
-                                <p className="font-medium">{card.type === 'Dollar' ? 'USD' : 'NGN'}</p>
+                                <p className="font-medium">{card.card_currency}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Status</p>
-                                <p className="font-medium text-green-600">Active</p>
+                                <p className={`font-medium ${card.is_active ? 'text-green-500' : 'text-red-500'}`}>
+                                    {card.is_active === true ? 'Active' : 'Inactive'}
+                                </p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Daily Limit</p>
                                 <p className="font-medium">
-                                    {card.type === 'Dollar' ? '$1,000' : '₦500,000'}
+                                    {card.current_card_limit}
                                 </p>
                             </div>
                         </div>

@@ -1,5 +1,3 @@
-import React from 'react'
-
 const ProfileForm = () => {
     return (
         <div className="w-full mt-2 py-4 px-3 bg-white dark:bg-gray-800 rounded-lg relative">

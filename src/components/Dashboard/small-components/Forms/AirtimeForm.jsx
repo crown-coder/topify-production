@@ -38,7 +38,7 @@ const AirtimeForm = ({ onSubmit, selectedPlan = {}, provider, closeModal }) => {
         const fetchWalletBalance = async () => {
             try {
                 const response = await axios.get(
-                    '/api/api2/user',
+                    `${import.meta.env.VITE_API_URL}/api2/user`,
                     {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -106,7 +106,7 @@ const AirtimeForm = ({ onSubmit, selectedPlan = {}, provider, closeModal }) => {
 
         try {
             const response = await axios.post(
-                '/api/buy_airtime',
+                `${import.meta.env.VITE_API_URL}/buy_airtime`,
                 {
                     phone_number: formattedPhoneNumber,
                     mobile_network: networkId,
@@ -124,8 +124,6 @@ const AirtimeForm = ({ onSubmit, selectedPlan = {}, provider, closeModal }) => {
                 }
             );
 
-            // If we get here, the request was successful (status 200-299)
-            // Update wallet balance after successful purchase
             setWalletBalance(prev => prev - amountValue);
 
             openModal(

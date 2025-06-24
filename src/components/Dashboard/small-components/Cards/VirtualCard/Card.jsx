@@ -6,14 +6,14 @@ import { useModal } from '../../../../ModalContext';
 import CardLayout from '../CardLayout';
 import CardFundingForm from '../../Forms/CardFundingForm';
 
-const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, cvv, balance, currency, lastFour }) => {
+const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, cvv, balance, currency, lastFour, cardName }) => {
     const { openModal, closeModal } = useModal();
     const navigate = useNavigate();
 
     // console.log(currency)
     // Log card ID when component mounts (for debugging)
     React.useEffect(() => {
-        console.log(`Card component mounted with ID: ${cardId || 'unknown'}`);
+        // console.log(`Card component mounted with ID: ${cardId || 'unknown'}`);
     }, [cardId]);
 
     const handleOpenModal = (e) => {
@@ -28,7 +28,7 @@ const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, 
 
     const handleViewDetails = (e) => {
         e.stopPropagation();
-        console.log(`Viewing details for card ID: ${cardId || 'unknown'}`);
+        // console.log(`Viewing details for card ID: ${cardId || 'unknown'}`);
 
         if (onClick) {
             onClick(cardData);

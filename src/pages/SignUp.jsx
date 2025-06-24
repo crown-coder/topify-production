@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Logo from '../assets/logo.png'
 import AuthPageLayout from '../components/AuthPageLayout'
+import AlertBox from '../components/Dashboard/small-components/AlertBox'
 
 const SignUp = () => {
     const navigate = useNavigate()
@@ -15,6 +16,7 @@ const SignUp = () => {
         address: '',
         referral: ''
     })
+    const [showAlert, setShowAlert] = useState(false);
 
     const [error, setError] = useState('')
     const [fieldErrors, setFieldErrors] = useState({})
@@ -30,20 +32,29 @@ const SignUp = () => {
         setError('')
         setFieldErrors({})
 
-        // if (formData.password !== formData.password_confirmation) {
-        //     setError('Passwords do not match')
-        //     setLoading(false)
-        //     return
-        // }
+        if (formData.password !== formData.password_confirmation) {
+            setError('Passwords do not match')
+            setLoading(false)
+            return
+        }
 
         try {
 
-            const response = await axios.post('/api/register', formData)
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/register`, formData, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                withCredentials: true,
+            })
+            // 
 
             if (response.status === 200 || response.status === 201) {
-                alert('Registration successful!')
-                navigate('/login')
-                console.log("Registration successful!")
+                setShowAlert(true);
+
+                setTimeout(() => {
+                    navigate('/login');
+                }, 2000);
             }
         } catch (err) {
 
@@ -68,6 +79,13 @@ const SignUp = () => {
 
     return (
         <AuthPageLayout>
+            {showAlert && (
+                <AlertBox
+                    message="Registration successful!"
+                    isVisible={showAlert}
+                    onDismiss={() => setShowAlert(false)}
+                />
+            )}
             <div className='bg-white p-5 rounded-3xl shadow-lg flex flex-col gap-3 items-center w-[35%] max-lg:w-[85%]'>
                 <img src={Logo} alt='Logo' className='w-[70px] h-[70px]' />
                 <div className='text-center'>

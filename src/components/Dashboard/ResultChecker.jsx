@@ -59,7 +59,7 @@ const ResultForm = ({
     useEffect(() => {
         const fetchWalletBalance = async () => {
             try {
-                const response = await axios.get('/api/api2/user', {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -97,7 +97,7 @@ const ResultForm = ({
 
         try {
             const response = await axios.post(
-                'https://app.smartdatalinks.ng/result_checker',
+                `${import.meta.env.VITE_API_URL}/result_checker`,
                 {
                     quantity: qty,
                     exam_type_id: EXAM_CONFIG[examType].id

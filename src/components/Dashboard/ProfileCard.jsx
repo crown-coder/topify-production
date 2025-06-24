@@ -1,29 +1,45 @@
-import React, { useState } from "react";
+import React from "react";
 import axios from "axios";
 import { FaRegLightbulb, FaLightbulb, FaBell } from "react-icons/fa";
 import { CiLogout } from "react-icons/ci";
 import { motion } from "framer-motion";
 import Cookies from "js-cookie";
-
+import { useNavigate } from "react-router-dom";
 
 const ProfileCard = ({ isVisible, onToggleDarkMode }) => {
+    const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/logout`, {}, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            // withCredentials: true,
+
+            Cookies.remove("XSRF-TOKEN");
+            Cookies.remove("topify_session");
+            Cookies.remove("otp_verified_token");
 
             localStorage.removeItem("token");
-            Cookies.remove("XSRF-TOKEN");
 
-            await axios.post("/api/logout");
+            navigate("/login");
+            window.location.reload();
 
-            // Redirect to home
-            window.location.href = "/";
         } catch (error) {
             console.error("Logout failed:", error);
 
-            localStorage.removeItem("token");
+            // Fallback: clear cookies and storage even if API fails
             Cookies.remove("XSRF-TOKEN");
-            window.location.href = "/";
+            Cookies.remove("topify_session");
+            Cookies.remove("otp_verified_token");
+            localStorage.removeItem("token");
+
+            // Redirect to login page
+            navigate("/login");
+            window.location.reload();
         }
     };
 

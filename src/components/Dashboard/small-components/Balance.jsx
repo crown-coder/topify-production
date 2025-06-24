@@ -28,7 +28,15 @@ const Balance = () => {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get('/api/api2/user');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          withCredentials: true,
+        });
+
       setUser(response.data);
       setIsKYCCompleted(response.data.kyc_verified);
     } catch (err) {

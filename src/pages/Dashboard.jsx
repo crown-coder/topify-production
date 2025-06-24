@@ -4,6 +4,8 @@ import Sidebar from "../components/Dashboard/Sidebar"
 import Profile from "../components/Dashboard/Profile"
 import ModelLayout from '../components/Dashboard/small-components/ModelLayout.jsx'
 import { useModal } from '../components/ModalContext.jsx'
+import Cookies from "js-cookie";
+import { useNavigate } from "react-router-dom";
 
 import {
     MainDashboard,
@@ -43,6 +45,8 @@ const Dashboard = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { isModalOpen, modalContent, closeModal } = useModal();
     const [iconsOnly, setIconsOnly] = useState(false);
+    const navigate = useNavigate();
+
 
     const toggleIconsOnly = () => {
         setIconsOnly((prev) => !prev);
@@ -54,10 +58,44 @@ const Dashboard = () => {
         }
     };
 
+
+    const handleLogout = async () => {
+        try {
+            await axios.post("/api/logout", {}, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                withCredentials: true,
+            });
+
+            Cookies.remove("XSRF-TOKEN");
+            Cookies.remove("topify_session");
+            Cookies.remove("otp_verified_token");
+
+            localStorage.removeItem("token");
+
+            navigate("/login");
+            window.location.reload();
+
+        } catch (error) {
+            console.error("Logout failed:", error);
+
+            // Fallback: clear cookies and storage even if API fails
+            Cookies.remove("XSRF-TOKEN");
+            Cookies.remove("topify_session");
+            Cookies.remove("otp_verified_token");
+            localStorage.removeItem("token");
+
+            // Redirect to login page
+            navigate("/login");
+            window.location.reload();
+        }
+    };
+
     return (
         <div className="bg-gray-100 dark:bg-gray-900 min-h-screen flex gap-2">
             {/* Sidebar */}
-            <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} iconsOnly={iconsOnly} closeModal={closeModal} />
+            <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} iconsOnly={iconsOnly} closeModal={closeModal} onLogout={handleLogout} />
 
             <div className={`flex-1 rounded-lg transition-all duration-100 ${iconsOnly ? "lg:ml-[80px]" : "lg:ml-[240px]"} relative`} onClick={handleSideBarClose}>
 

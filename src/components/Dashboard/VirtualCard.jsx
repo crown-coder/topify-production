@@ -4,6 +4,7 @@ import CreateVirtualCard from './small-components/CreateVirtualCard';
 import VirtualCards from './small-components/VirtualCards';
 import KycModal from './small-components/KycModal';
 import OtpModal from './small-components/OtpModal';
+import CardSelectionModal from './small-components/CardSelectionModal';
 import { useModal } from '../ModalContext';
 import Cookies from 'js-cookie';
 
@@ -12,6 +13,7 @@ const VirtualCard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showOtpModal, setShowOtpModal] = useState(false);
     const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [availableCards, setAvailableCards] = useState([]);
     const { openModal, closeModal } = useModal();
 
     const isCookieExist = (cookieName) => {
@@ -24,7 +26,7 @@ const VirtualCard = () => {
 
         setIsSendingOtp(true);
         try {
-            await axios.post('/api/send-otp', {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/send-otp`, {
                 email: user?.email
             });
             setShowOtpModal(true);
@@ -54,10 +56,19 @@ const VirtualCard = () => {
         }
     };
 
+    const fetchAvailableCards = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/getCardType`);
+            setAvailableCards(response.data.data || []);
+        } catch (error) {
+            console.error("Error fetching available cards:", error);
+        }
+    };
+
     const fetchUserData = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get('/api/api2/user');
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`);
             const userData = {
                 ...response.data,
                 kyc_verified: true // Hardcoded for development
@@ -82,7 +93,31 @@ const VirtualCard = () => {
 
     useEffect(() => {
         fetchUserData();
+        fetchAvailableCards();
     }, []);
+
+    const handleCardSelection = (selectedCard) => {
+        // Check if user has KYC with this provider
+        const hasKYC = user?.cardholder_ids?.[selectedCard.provider] !== null;
+
+        if (hasKYC) {
+            // User has KYC with this provider, proceed to card creation
+            openModal(
+                <VirtualCards provider={selectedCard.provider} />
+            );
+        } else {
+            // User needs to complete KYC for this provider
+            openModal(
+                <CreateVirtualCard
+                    provider={selectedCard.provider}
+                    onCardCreated={() => {
+                        fetchUserData();
+                        closeModal();
+                    }}
+                />
+            );
+        }
+    };
 
     if (isLoading) {
         return (
@@ -100,20 +135,32 @@ const VirtualCard = () => {
         return null;
     }
 
-    if (!user.cardholder_id) {
-        return (
-            <CreateVirtualCard
-                onCardCreated={() => {
-                    fetchUserData();
-                }}
-            />
-        );
-    }
+    // Check if user has any cardholder IDs
+    // const hasCardholderIds = user.cardholder_ids &&
+    //     Object.values(user.cardholder_ids).some(id => id !== null);
+
+    // if (!hasCardholderIds) {
+    //     return (
+    //         <div className="text-center py-10">
+    //             <button
+    //                 onClick={() => openModal(
+    //                     <CardSelectionModal
+    //                         cards={availableCards}
+    //                         onSelect={handleCardSelection}
+    //                     />
+    //                 )}
+    //                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+    //             >
+    //                 Create Virtual Card
+    //             </button>
+    //         </div>
+    //     );
+    // }
 
     return (
         <>
             {isCookieExist('otp_verified_token') ? (
-                <VirtualCards />
+                <VirtualCards provider={Object.keys(user.cardholder_ids).find(key => user.cardholder_ids[key] !== null)} />
             ) : (
                 <div className="text-center py-10">
                     <button

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import AlertBox from './AlertBox';
 
 const FormField = ({ label, name, value, onChange, placeholder, error, type = 'text' }) => (
     <div>
@@ -69,6 +70,12 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
     const xsrfToken = Cookies.get('XSRF-TOKEN');
 
+    const [alert, setAlert] = useState({
+        show: false,
+        message: '',
+        type: 'success' // 'success', 'error', 'warning', 'info'
+    });
+
     const [cardsAvailable, setCardsAvailable] = useState([]);
     const [selectedCard, setSelectedCard] = useState(null);
     const [selfieImage, setSelfieImage] = useState(null);
@@ -86,7 +93,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
     const fetchAvailableCards = async () => {
         try {
-            const response = await axios.post('/api/getCardType', {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -98,7 +105,12 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             setCardsAvailable(activeCards);
         } catch (error) {
             console.error("Error fetching available cards:", error);
-            alert("Failed to fetch available cards. Please try again later.");
+
+            setAlert({
+                show: true,
+                message: "Failed to fetch available cards. Please try again later.",
+                type: "error"
+            });
         }
     };
 
@@ -248,6 +260,18 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
             if (selectedCard?.provider === 'graph') {
                 formDataToSend.append('bank_id_number', formData.bvn_number);
+                formDataToSend.append('id_type', formData.id_type);
+
+                if (formData.id_type === 'bvn') {
+                    formDataToSend.append('bvn_number', formData.bvn_number);
+                } else if (formData.id_type === 'nin') {
+                    formDataToSend.append('nin_number', formData.nin_number);
+                    if (frontIdImage) formDataToSend.append('front_card', frontIdImage);
+                    if (backIdImage) formDataToSend.append('back_card', backIdImage);
+                } else if (formData.id_type === 'passport') {
+                    formDataToSend.append('passport_number', formData.passport_number);
+                    if (frontIdImage) formDataToSend.append('passport_image', frontIdImage);
+                }
             } else {
                 formDataToSend.append('id_type', formData.id_type);
 
@@ -268,7 +292,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             }
 
             const response = await axios.post(
-                '/api/virtual-cards/create-holder',
+                `${import.meta.env.VITE_API_URL}/virtual-cards/create-holder`,
                 formDataToSend,
                 {
                     headers: {
@@ -279,12 +303,21 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                 }
             );
 
-            alert("Virtual Card User Created Successfully!");
+            setAlert({
+                show: true,
+                message: "Virtual Card User Created Successfully!",
+                type: "success"
+            });
+
             onCardCreated(response.data);
         } catch (error) {
             console.error("Card creation failed:", error);
             const errorMessage = error.response?.data?.message || error.message || "Failed to create card user Account. Please try again.";
-            alert(errorMessage);
+            setAlert({
+                show: true,
+                message: errorMessage,
+                type: "error"
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -512,6 +545,16 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
     return (
         <div className="w-full p-6 bg-white rounded-xl shadow-sm mt-2">
+
+            {alert.show && (
+                <AlertBox
+                    message={alert.message}
+                    isVisible={alert.show}
+                    onDismiss={() => setAlert({ ...alert, show: false })}
+                    type={alert.type}
+                />
+            )}
+
             <div className="grid md:grid-cols-2 gap-8">
                 {/* Information Section */}
                 <div className="space-y-6">
@@ -663,25 +706,25 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                                 />
                             </div>
 
-                            {selectedCard.provider !== 'graph' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
-                                    <select
-                                        name="id_type"
-                                        value={formData.id_type}
-                                        onChange={handleChange}
-                                        className={`w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm ${errors.id_type ? 'border-red-500' : 'border-gray-300'}`}
-                                        required
-                                    >
-                                        <option value="bvn">BVN</option>
-                                        <option value="nin">NIN</option>
-                                        <option value="passport">Passport</option>
-                                    </select>
-                                    {errors.id_type && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.id_type}</p>
-                                    )}
-                                </div>
-                            )}
+                            {/* {selectedCard.provider !== 'graph' && ( */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
+                                <select
+                                    name="id_type"
+                                    value={formData.id_type}
+                                    onChange={handleChange}
+                                    className={`w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm ${errors.id_type ? 'border-red-500' : 'border-gray-300'}`}
+                                    required
+                                >
+                                    <option value="bvn">BVN</option>
+                                    <option value="nin">NIN</option>
+                                    <option value="passport">Passport</option>
+                                </select>
+                                {errors.id_type && (
+                                    <p className="mt-1 text-xs text-red-500">{errors.id_type}</p>
+                                )}
+                            </div>
+                            {/* )} */}
 
                             {renderIdFields()}
 

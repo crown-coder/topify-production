@@ -10,7 +10,7 @@ const TransactionTable = () => {
     useEffect(() => {
         const fetchTransactions = async () => {
             try {
-                const response = await axios.get('/api/transactions?search=&page=1&pageSize=10');
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/transactions?search=&page=1&pageSize=10`);
                 setTransactions(response.data);
             } catch (error) {
                 console.error('Error fetching transactions:', error);
@@ -23,8 +23,8 @@ const TransactionTable = () => {
     }, []);
 
     const handleRowClick = (transaction) => {
-        navigate(`/dashboard/transactions/receipt/${transaction.id}`, { 
-            state: transaction 
+        navigate(`/dashboard/transactions/receipt/${transaction.id}`, {
+            state: transaction
         });
     };
 

@@ -1,8 +1,12 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Logo from '../assets/logo.png'
 import AuthPageLayout from '../components/AuthPageLayout'
+import AlertBox from '../components/Dashboard/small-components/AlertBox'
+import Cookies from 'js-cookie'
+
+// axios.defaults.withCredentials = true; // Ensure axios uses credentials by default
 
 const Login = () => {
     const navigate = useNavigate()
@@ -20,18 +24,31 @@ const Login = () => {
     }
 
     const handleSubmit = async (e) => {
+        // await axios.get('https://app.topify.ng/sanctum/csrf-cookie');
+
         e.preventDefault()
         setLoading(true)
         setError('')
         setFieldErrors({})
 
+
         try {
-            const response = await axios.post('/api/login', formData)
+
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, formData,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    withCredentials: true,
+                })
+            // withCredentials: true,
 
             if (response.status === 200 || response.status === 201) {
-                // alert('Login successful!')
+                console.log("the cookie", Cookies.get('XSRF-TOKEN'))
                 navigate('/dashboard/')
             }
+
         } catch (err) {
             if (err.response?.data?.errors) {
                 setFieldErrors(err.response.data.errors)
@@ -40,7 +57,7 @@ const Login = () => {
                 setError(err.response.data.message)
                 setFieldErrors({})
             } else if (!err.response) {
-                setError('Network error. Please check your internet connection.') // fallback for network-related issues
+                setError('Network error. Please check your internet connection.')
             } else {
                 setError('Something went wrong. Please try again.')
                 setFieldErrors({})
@@ -53,6 +70,7 @@ const Login = () => {
 
     return (
         <AuthPageLayout>
+            <AlertBox />
             <div className='bg-white p-5 rounded-3xl shadow-lg flex flex-col gap-3 items-center w-[35%] max-lg:w-[85%]'>
                 <img src={Logo} alt='Logo' className='w-[70px] h-[70px]' />
                 <div className='text-center'>
@@ -94,3 +112,4 @@ const Login = () => {
 }
 
 export default Login
+

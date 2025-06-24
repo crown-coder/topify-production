@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 
 const RefferalTable = () => {
@@ -8,7 +8,7 @@ const RefferalTable = () => {
     useEffect(() => {
         const fetchReferrals = async () => {
             try {
-                const response = await axios.get('/api/referrals')
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/referrals`)
                 setReferrals(response.data)
             } catch (error) {
                 console.error('Error fetching referrals:', error)

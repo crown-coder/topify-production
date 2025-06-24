@@ -1,23 +1,26 @@
-import React from "react";
 import { NAVIGATION_ITEMS } from "../../constants/constants";
 import { Link, useLocation } from "react-router-dom";
 import Logo from "../../assets/logo.png";
 
-const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, closeModal, iconsOnly }) => {
+const Sidebar = ({
+    isSidebarOpen,
+    setIsSidebarOpen,
+    closeModal,
+    iconsOnly,
+    onLogout
+}) => {
     const location = useLocation();
 
     const handleCloseModal = () => {
         setIsSidebarOpen(false);
-        closeModal();
+        if (closeModal) closeModal();
     };
 
     return (
         <aside
-            className={`fixed top-2 left-2 h-screen transition-all duration-100 ${
-                iconsOnly ? "w-10px" : "w-[225px]"
-            } max-lg:w-[50%] max-lg:shadow-lg overflow-y-auto rounded-xl py-4 pl-4 bg-white dark:bg-gray-800 z-50 transform transition-transform duration-300 ${
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-            }`}
+            className={`fixed top-2 left-2 h-screen transition-all duration-100 ${iconsOnly ? "w-10px" : "w-[225px]"
+                } max-lg:w-[50%] max-lg:shadow-lg overflow-y-auto rounded-xl py-4 pl-4 bg-white dark:bg-gray-800 z-50 transform transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+                }`}
         >
             <div className="logo mb-6">
                 <img src={Logo} width={50} height={42} alt="Logo" />
@@ -34,23 +37,42 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, closeModal, iconsOnly }) => 
                                 location.pathname === `/dashboard/${item.route}` ||
                                 location.pathname.startsWith(`/dashboard/${item.route}/`);
 
+                            // Special handling for logout button
+                            if (item.route === "logout") {
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            handleCloseModal();
+                                            onLogout();
+                                        }}
+                                        className={`pl-3 py-1 w-full ${iconsOnly ? "mb-[5px]" : ""} 
+                                            max-lg:text-sm text-left text-[15px] rounded-tl-lg rounded-bl-lg 
+                                            flex items-center gap-2 font-light hover:bg-gray-100 dark:hover:bg-gray-700`}
+                                    >
+                                        <span className={`${iconsOnly ? "text-xl " : ""}`}>
+                                            <item.icon className="text-red-500" />
+                                        </span>
+                                        <span className={`${iconsOnly ? "hidden" : ""} text-red-500`}>{item.name}</span>
+                                    </button>
+                                );
+                            }
+
+                            // Regular navigation items
                             return (
                                 <Link
                                     key={idx}
                                     to={`/dashboard/${item.route}`}
-                                    className={`pl-3 py-1 w-full ${
-                                        iconsOnly ? "mb-[5px]" : ""
-                                    } max-lg:text-sm text-left text-[15px] rounded-tl-lg rounded-bl-lg flex items-center gap-2 font-light ${
-                                        isActive
+                                    className={`pl-3 py-1 w-full ${iconsOnly ? "mb-[5px]" : ""
+                                        } max-lg:text-sm text-left text-[15px] rounded-tl-lg rounded-bl-lg flex items-center gap-2 font-light ${isActive
                                             ? "bg-[#4CACF0] text-[#175682]"
                                             : "hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    }`}
-                                    onClick={handleCloseModal} // Close sidebar when link is clicked
+                                        }`}
+                                    onClick={handleCloseModal}
                                 >
                                     <span
-                                        className={`${iconsOnly ? "text-xl text-gray-500" : ""} ${
-                                            isActive && iconsOnly ? "text-white" : ""
-                                        }`}
+                                        className={`${iconsOnly ? "text-xl text-gray-500" : ""} ${isActive && iconsOnly ? "text-white" : ""
+                                            }`}
                                     >
                                         <item.icon />
                                     </span>

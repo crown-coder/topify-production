@@ -1,79 +1,62 @@
-import React, { useState, useEffect } from 'react'
-import { TbCurrencyNaira } from 'react-icons/tb';
-import { FaDollarSign } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import Skeleton from "react-loading-skeleton";
 
-const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, closeModal }) => {
-    const [cardType, setCardType] = useState(initialCardType);
+const NewVirtualCardForm = ({ onCreateCard, closeModal, selectedCard }) => {
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [exchangeRate, setExchangeRate] = useState(0);
     const [isCreating, setIsCreating] = useState(false);
-    const [userWalletBalanceNGN, setUserWalletBalanceNGN] = useState(0)
-    const [exchangeRate, setExchangeRate] = useState(1693)
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            try {
-                const xsrfToken = Cookies.get('XSRF-TOKEN');
-                if (!xsrfToken) {
-                    throw new Error('Authentication token missing')
-                }
-                const config = {
-                    headers: {
-                        'X-XSRF-TOKEN': xsrfToken,
-                    },
-                    withCredentials: true
-                }
-
-                const [walletResponse, rateResponse] = await Promise.all([
-                    axios.get('/api/api2/user', config),
-                    axios.post('/api/getExchageRates')
-                ])
-
-                setUserWalletBalanceNGN(walletResponse.data?.wallet?.balance || 0)
-                setExchangeRate(rateResponse.data?.data?.NGN ?? 1693)
-            } catch (err) {
-                console.error('Error fetching initial data:', err)
-            }
-        }
-
-        fetchInitialData()
-    }, [])
-
-    const formatBalance = (balance) => {
-        return new Intl.NumberFormat('en-NG', {
-            style: 'currency',
-            currency: 'NGN'
-        }).format(balance).replace('NGN', '₦')
-    }
-
-    // const userWalletBalanceNGN = 50000;  // ₦50,000
-
-    // Mock exchange rate (1 USD = 1500 NGN)
-    // const exchangeRate = 1500;
-
     const [formData, setFormData] = useState({
         fundingAmount: '',
         pin: '',
     });
 
-    const handleCardTypeChange = (type) => {
-        setCardType(type);
-        onCardTypeChange(type);
-        setError(null);
-    };
+    // Get XSRF token from cookies
+    const xsrfToken = Cookies.get('XSRF-TOKEN');
+
+    //fetch wallet Balance
+    const fetchWalletBalance = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get('/api/api2/user')
+            setWalletBalance(response.data.wallet.balance);
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchWalletBalance();
+    }, []);π
+
+
+    //fetch exchange rate
+    const fetchExchangeRate = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.post('/api/getExchangeRates');
+            setExchangeRate(response.data.data.app_rate);
+            // console.log('Exchange Rate:', response.data.data.app_rate);
+        } catch (err) {
+            console.error('Error fetching exchange rate:', err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchExchangeRate();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         setError(null);
-    };
-
-    // Calculate USD equivalent for Naira funding amount
-    const calculateDollarEquivalent = (nairaAmount) => {
-        if (!nairaAmount) return 0;
-        const amount = parseFloat(nairaAmount);
-        return (amount / exchangeRate).toFixed(2);
     };
 
     const handleSubmit = async (e) => {
@@ -82,36 +65,22 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
         setError(null);
 
         try {
-            // Validate funding amount for USD cards
-            if (cardType === 'Dollar' && formData.fundingAmount) {
-                const fundingAmount = parseFloat(formData.fundingAmount);
-                if (fundingAmount > userWalletBalanceNGN) {
-                    throw new Error('Insufficient Naira balance');
-                }
-            }
-
             // Validate PIN
             if (!formData.pin || formData.pin.length !== 4) {
                 throw new Error('PIN must be 4 digits');
             }
 
-            // Prepare request data
+            // Validate funding amount
+            if (!formData.fundingAmount || parseFloat(formData.fundingAmount) <= 0) {
+                throw new Error('Please enter a valid funding amount');
+            }
+
             const requestData = {
-                card_currency: cardType === 'Naira' ? 'NGN' : 'USD',
+                card_type_id: selectedCard.id,
+                funding_amount: formData.fundingAmount,
                 pin: formData.pin
             };
 
-            // Add funding amount for USD cards (send the dollar equivalent)
-            if (cardType === 'Dollar' && formData.fundingAmount) {
-                requestData.funding_amount = calculateDollarEquivalent(formData.fundingAmount);
-            }
-
-
-            console.log(requestData)
-            // Get XSRF token from cookies
-            const xsrfToken = Cookies.get('XSRF-TOKEN');
-
-            // Make API call
             const response = await axios.post(
                 '/api/virtual-cards/card/create',
                 requestData,
@@ -131,7 +100,6 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
         } catch (error) {
             console.error('Error creating card:', error.response?.data);
             setError(error.response?.data?.message || error.message || 'Failed to create card');
-
         } finally {
             setIsCreating(false);
         }
@@ -139,63 +107,123 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
 
     return (
         <div>
-            <div className="grid grid-cols-2 gap-2 my-5">
-                <button
-                    onClick={() => handleCardTypeChange('Naira')}
-                    className={`p-3 rounded-lg flex flex-col items-center gap-1 transition-colors ${cardType === 'Naira'
-                        ? 'bg-blue-300/10 text-[#4CACF0] border-b-2 border-[#4CACF0]'
-                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
-                        }`}
-                >
-                    <TbCurrencyNaira className="text-3xl" />
-                    <span>Naira Card</span>
-                </button>
-                <button
-                    onClick={() => handleCardTypeChange('Dollar')}
-                    className={`p-3 rounded-lg flex flex-col items-center gap-1 transition-colors ${cardType === 'Dollar'
-                        ? 'bg-blue-300/10 text-[#4CACF0] border-b-2 border-[#4CACF0]'
-                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
-                        }`}
-                >
-                    <FaDollarSign className="text-3xl" />
-                    <span>Dollar Card</span>
-                </button>
-            </div>
+            {selectedCard && (
+                <div className="mb-6 relative ">
+                    <div className="relative bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-5 text-white overflow-hidden shadow-lg transition-all duration-75 hover:shadow-none cursor-pointer">
+                        {/* Card shine effect */}
+                        <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-gradient-to-r from-transparent via-white to-transparent"></div>
 
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium">Wallet Balance:</p>
-                <p className="text-lg font-semibold">{formatBalance(parseFloat(userWalletBalanceNGN))}</p>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <p className="text-xs opacity-80">Card Type</p>
+                                    <p className="font-medium">{selectedCard.name}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs opacity-80">Creation Fee</p>
+                                    <p className="font-medium">{selectedCard.fee} USD</p>
+                                </div>
+                            </div>
+
+                            <div className="mb-2">
+                                <p className="text-xs opacity-80 mb-1">Limit</p>
+                                <p className="text-xl font-bold">{selectedCard.limit} USD</p>
+                            </div>
+
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <p className="text-xs opacity-80">Currency</p>
+                                    <p className="font-medium">{selectedCard.currency}</p>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-[45px] h-[45px] bg-white/20 rounded-full flex items-center justify-center">
+                                        <img src='/logo.png' />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Decorative elements */}
+                        <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-white/10"></div>
+                        <div className="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-white/5"></div>
+                    </div>
+
+                    {/* Card status indicator (optional) */}
+                    <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
+                        {selectedCard.status}
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-2">
+                <div className="flex justify-between items-end">
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">
+                            {loading ? (
+                                <Skeleton width={100} />
+                            ) : (
+                                "Wallet Balance"
+                            )}
+                        </h4>
+                        <p className="text-2xl font-bold text-gray-800">
+                            {loading ? (
+                                <Skeleton width={150} height={32} />
+                            ) : (
+                                <span className="flex items-center">
+                                    <span className="text-gray-600">₦</span>
+                                    {new Intl.NumberFormat('en-NG').format(walletBalance)}
+                                </span>
+                            )}
+                        </p>
+                    </div>
+
+                    <div>
+                        {/* <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">
+                            {loading ? (
+                                <Skeleton width={100} />
+                            ) : (
+                                "Today's Exchange Rate"
+                            )}
+                        </p> */}
+                        <p className="text-sm font-bold text-gray-800">
+                            {loading ? (
+                                <Skeleton width={150} height={32} />
+                            ) : (
+                                <span className="flex items-center text-green-600">
+                                    <span className="mr-1">₦</span>
+                                    {new Intl.NumberFormat('en-NG', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }).format(exchangeRate)}
+                                    <span className="text-sm font-medium text-gray-500 ml-1">/USD</span>
+                                </span>
+                            )}
+                        </p>
+                    </div>
+
+                </div>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                {cardType === 'Dollar' && (
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="fundingAmount" className="text-sm font-light">
-                            Amount to Fund (₦)
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2">₦</span>
-                            <input
-                                className="w-full pl-8 p-2 rounded-lg border text-[#989898] text-sm font-light"
-                                type="number"
-                                name="fundingAmount"
-                                value={formData.fundingAmount}
-                                onChange={handleChange}
-                                min="1500" // Minimum ₦1500 (equivalent to $1)
-                                step="any"
-                                placeholder={`Minimum ₦${exchangeRate} ($1)`}
-                                required
-                            />
-                        </div>
-                        {formData.fundingAmount && (
-                            <p className='text-sm font-normal text-gray-400'>
-                                Will be converted to: <span className='text-green-600'>
-                                    ${calculateDollarEquivalent(formData.fundingAmount)} USD
-                                </span>
-                            </p>
-                        )}
+                <div className="flex flex-col gap-2">
+                    <label htmlFor="fundingAmount" className="text-sm font-light">
+                        Amount to Fund
+                    </label>
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                        <input
+                            className="w-full pl-8 p-2 rounded-lg border text-[#989898] text-sm font-light"
+                            type="number"
+                            name="fundingAmount"
+                            value={formData.fundingAmount}
+                            onChange={handleChange}
+                            min="1"
+                            step="any"
+                            placeholder="Enter amount in USD"
+                            required
+                        />
                     </div>
-                )}
+                </div>
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="pin" className="text-sm font-light">
@@ -236,7 +264,7 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
                             Creating...
                         </span>
                     ) : (
-                        `Create ${cardType} Card`
+                        'Create Card'
                     )}
                 </button>
             </form>
@@ -244,4 +272,4 @@ const NewVirtualCardForm = ({ initialCardType, onCardTypeChange, onCreateCard, c
     )
 }
 
-export default NewVirtualCardForm
+export default NewVirtualCardForm;

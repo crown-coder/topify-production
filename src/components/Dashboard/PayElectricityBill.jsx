@@ -11,16 +11,6 @@ import { MdKeyboardArrowRight } from "react-icons/md";
 import { ImSpinner8 } from "react-icons/im";
 import { TailSpin } from 'react-loader-spinner';
 import Confetti from "react-confetti";
-import { MdCancel } from "react-icons/md";
-
-// Create axios instance with default config
-const api = axios.create({
-    baseURL: 'https://app.smartdatalinks.ng',
-    withCredentials: true, // This ensures cookies are sent with requests
-    headers: {
-        'Content-Type': 'application/json'
-    }
-});
 
 const ElectricityPaymentForm = ({
     type,
@@ -59,7 +49,7 @@ const ElectricityPaymentForm = ({
     useEffect(() => {
         const fetchWalletBalance = async () => {
             try {
-                const response = await api.get('/api2/user');
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`);
                 const balance = parseFloat(response.data?.wallet?.balance || 0);
                 setWalletBalance(balance);
             } catch (err) {
@@ -87,7 +77,7 @@ const ElectricityPaymentForm = ({
 
         const meter_type = type.toLowerCase();
         const disco_name = getDiscoName(company);
-        const url = `/validate_meter?meter_number=${meterNumber}&disco_name=${disco_name}&meter_type=${meter_type}`;
+        const url = `${import.meta.env.VITE_API_URL}/validate_meter?meter_number=${meterNumber}&disco_name=${disco_name}&meter_type=${meter_type}`;
 
         try {
             setIsValidating(true);
@@ -155,7 +145,7 @@ const ElectricityPaymentForm = ({
 
         try {
             const response = await api.post(
-                '/electricity_bill_payments',
+                `${import.meta.env.VITE_API_URL}/electricity_bill_payments`,
                 {
                     electricity_distributor_id: discoIdMap[company] || 0,
                     disco_name: getDiscoName(company),

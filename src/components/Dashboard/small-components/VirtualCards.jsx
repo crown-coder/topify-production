@@ -7,27 +7,81 @@ import NewCard from './Cards/VirtualCard/NewCard';
 import { useModal } from '../../ModalContext';
 import CardLayout from './Cards/CardLayout';
 import NewVirtualCardForm from './Forms/NewVirtualCardForm';
+import CardSelectionModal from './CardSelectionModal';
+import KycModal from './KycModal';
 import Cookies from 'js-cookie';
 
 const VirtualCards = () => {
     const [cardType, setCardType] = useState('Naira');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [cards, setCards] = useState([]);
+    const [cards, setCards] = useState(null);
+    const [availableCardTypes, setAvailableCardTypes] = useState([]);
+    const [selectedCard, setSelectedCard] = useState(null);
+    const [cardholderId, setCardholderId] = useState(null);
+    const [userData, setUserData] = useState(null);
+    const [showKycModal, setShowKycModal] = useState(false);
 
     const { openModal, closeModal } = useModal();
     const navigate = useNavigate();
 
+    const fetchUserData = async () => {
+        try {
+            const xsrfToken = Cookies.get('XSRF-TOKEN');
+            const config = {
+                headers: {
+                    'X-XSRF-TOKEN': xsrfToken,
+                },
+                withCredentials: true
+            };
 
-    const fetchCards = async () => {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, config);
+            setUserData(response.data);
+            return response.data;
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+            throw err;
+        }
+    };
+
+    const fetchAvailableCardTypes = async () => {
+        try {
+            const xsrfToken = Cookies.get('XSRF-TOKEN');
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
+                headers: {
+                    'X-XSRF-TOKEN': xsrfToken,
+                },
+                withCredentials: true,
+            });
+
+            const allCards = response.data.data || [];
+            const activeCards = allCards.filter(card => card.status === 'active');
+            setAvailableCardTypes(activeCards);
+            return activeCards;
+        } catch (error) {
+            console.error("Error fetching available cards:", error);
+            throw error;
+        }
+    };
+
+    const fetchCardholderId = async (provider) => {
+        try {
+            const user = await fetchUserData();
+            const ids = user.cardholder_ids || {};
+            return ids[provider];
+        } catch (err) {
+            console.error('Error fetching cardholder ID:', err);
+            return null;
+        }
+    };
+
+    const fetchCards = async (provider) => {
         try {
             setLoading(true);
             setError(null);
-            setCards([]);
 
             const xsrfToken = Cookies.get('XSRF-TOKEN');
             const otpToken = Cookies.get('otp_verified_token');
-            console.log(otpToken)
 
             if (!xsrfToken) {
                 throw new Error('Authentication token missing');
@@ -44,40 +98,121 @@ const VirtualCards = () => {
                 withCredentials: true
             };
 
-            const idResponse = await axios.get('/api/Allvirtual-cards', config);
-            const cardList = idResponse.data?.data;
+            const idResponse = await axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards?provider=${provider}`, config);
+            const cardList = idResponse.data?.data || [];
+
+            // console.log('Fetched cards:', cardList.Array.isArray(cardList) ? cardList.length : 0);
+
 
             if (!Array.isArray(cardList) || cardList.length === 0) {
-                return; // No cards available
+                return [];
             }
 
-            // Fetch all card details concurrently
             const detailPromises = cardList.map(card =>
-                axios.get(`/api/virtual-cards/${card.id}/details`, config)
+                axios.get(`${import.meta.env.VITE_API_URL}/virtual-cards/${card.id}/details`, config)
             );
 
             const detailResponses = await Promise.all(detailPromises);
 
-            const formattedCards = detailResponses.map(res => ({
+            return detailResponses.map(res => ({
                 ...res.data,
-                expiry: `${res.data.expiry_month}/${res.data.expiry_year.toString().slice(-2)}`
+                expiry: `${res.data.expiry_month}/${res.data.expiry_year.toString().slice(-2)}`,
+                provider: provider
             }));
-
-            setCards(formattedCards);
         } catch (err) {
             console.error('Error fetching virtual cards:', err);
-            setError(err.message || 'Failed to load cards. Please try again.');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchInitialData = async () => {
+        try {
+            setLoading(true);
+            const [user, cardTypes] = await Promise.all([
+                fetchUserData(),
+                fetchAvailableCardTypes()
+            ]);
+
+            // Check all possible providers for cards
+            if (user.cardholder_ids && Object.keys(user.cardholder_ids).length > 0) {
+                for (const provider of Object.keys(user.cardholder_ids)) {
+                    try {
+                        const cards = await fetchCards(provider);
+                        if (cards && cards.length > 0) {
+                            setCards(cards);
+                            return;
+                        }
+                    } catch (err) {
+                        console.error(`Error fetching cards for provider ${provider}:`, err);
+                    }
+                }
+            }
+
+            // If we get here, no cards were found
+            setCards([]);
+        } catch (err) {
+            console.error('Initial data fetch error:', err);
+            setError(err.message || 'Failed to load cards');
             setCards([]);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleCardSelection = async (selectedCard) => {
+        setSelectedCard(selectedCard);
+        const provider = selectedCard.provider;
+        const cardholderId = await fetchCardholderId(provider);
+        setCardholderId(cardholderId);
 
+        if (cardholderId) {
+            try {
+                const cards = await fetchCards(provider);
+                setCards(cards);
 
-    useEffect(() => {
-        fetchCards();
-    }, []);
+                openModal(
+                    <CardModalContent
+                        initialCardType={cardType}
+                        onCardTypeChange={setCardType}
+                        closeModal={closeModal}
+                        onCreateCard={handleCreateCard}
+                        provider={provider}
+                        cardholderId={cardholderId}
+                        selectedCard={selectedCard}
+                    />
+                );
+            } catch (err) {
+                setError(err.message || 'Failed to load cards. Please try again.');
+            }
+        } else {
+            setShowKycModal(true);
+        }
+    };
+
+    const handleKycSuccess = async (responseData) => {
+        setShowKycModal(false);
+        const newCardholderId = await fetchCardholderId(selectedCard.provider);
+        setCardholderId(newCardholderId);
+
+        if (newCardholderId) {
+            const cards = await fetchCards(selectedCard.provider);
+            setCards(cards);
+
+            openModal(
+                <CardModalContent
+                    initialCardType={cardType}
+                    onCardTypeChange={setCardType}
+                    closeModal={closeModal}
+                    onCreateCard={handleCreateCard}
+                    provider={selectedCard.provider}
+                    cardholderId={newCardholderId}
+                    selectedCard={selectedCard}
+                />
+            );
+        }
+    };
 
     const handleCardPress = (card) => {
         openModal(
@@ -95,22 +230,42 @@ const VirtualCards = () => {
     };
 
     const handleCreateCard = (newCard) => {
-        setCards(prev => [...prev, {
+        setCards(prev => [...(prev || []), {
             ...newCard,
-            expiry: `${newCard.expiry_month}/${newCard.expiry_year.toString().slice(-2)}`
+            expiry: `${newCard.expiry_month}/${newCard.expiry_year.toString().slice(-2)}`,
+            provider: selectedCard.provider
         }]);
     };
 
     const handleNewCard = () => {
         openModal(
-            <CardModalContent
-                initialCardType={cardType}
-                onCardTypeChange={setCardType}
-                closeModal={closeModal}
-                onCreateCard={handleCreateCard}
+            <CardSelectionModal
+                cards={availableCardTypes}
+                onSelect={handleCardSelection}
+                onClose={closeModal}
             />
         );
     };
+
+    const handleRefresh = () => {
+        setError(null);
+        fetchInitialData();
+    };
+
+    useEffect(() => {
+        fetchInitialData();
+    }, []);
+
+    if (showKycModal) {
+        return (
+            <KycModal
+                provider={selectedCard.provider}
+                cardTypeId={selectedCard.id}
+                onSuccess={handleKycSuccess}
+                onClose={() => setShowKycModal(false)}
+            />
+        );
+    }
 
     if (loading) {
         return (
@@ -136,7 +291,7 @@ const VirtualCards = () => {
                 <div className="text-center py-10">
                     <p className="text-red-500 mb-4">{error}</p>
                     <button
-                        onClick={fetchCards}
+                        onClick={handleRefresh}
                         className="px-4 py-2 bg-[#4CACF0] text-white rounded-md hover:bg-[#3a8bc8]"
                     >
                         Retry
@@ -154,11 +309,38 @@ const VirtualCards = () => {
             transition={{ duration: 0.5 }}
             className="relative my-2 p-5 rounded-xl w-full bg-white"
         >
-            <h1 className="text-lg mb-6 text-gray-600">My Virtual Cards</h1>
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center">
+                    <h1 className="text-lg text-gray-600">My Virtual Cards</h1>
+                    <button
+                        onClick={handleRefresh}
+                        className="ml-3 p-1 text-gray-500 hover:text-blue-500"
+                        title="Refresh cards"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                </div>
+                <button
+                    onClick={handleNewCard}
+                    className="px-4 py-2 bg-[#4CACF0] text-white rounded-md hover:bg-[#3a8bc8] text-sm"
+                >
+                    + New Card
+                </button>
+            </div>
 
-            {cards.length === 0 ? (
+            {cards === null ? (
+                <div className="flex justify-center items-center h-32">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+            ) : cards.length === 0 ? (
                 <div className="text-center py-10">
-                    <p className="text-gray-500 mb-4">You don't have any virtual cards yet</p>
+                    <img src="/empty-cards.svg" className="w-40 mx-auto mb-4" alt="No cards" />
+                    <p className="text-gray-500 mb-2">You don't have any virtual cards yet</p>
+                    <p className="text-sm text-gray-400 mb-4">
+                        Virtual cards help you shop online securely
+                    </p>
                     <button
                         onClick={handleNewCard}
                         className="px-4 py-2 bg-[#4CACF0] text-white rounded-md hover:bg-[#3a8bc8]"
@@ -172,6 +354,7 @@ const VirtualCards = () => {
                         <Card
                             key={card.card_id}
                             cardId={card.card_id}
+                            cardName={card.card_type_info}
                             className={card.card_currency === 'NGN' ? 'bg-blue-500' : 'bg-blue-950'}
                             onClick={() => handleCardPress(card)}
                             cardNumber={`**** **** **** ${card.last_4}`}
@@ -184,7 +367,6 @@ const VirtualCards = () => {
                         />
                     ))}
                     <NewCard onClick={handleNewCard} />
-
                 </div>
             )}
         </motion.div>
@@ -215,20 +397,11 @@ const CardPasscodeModal = ({ card, onSuccess, onClose }) => {
                 withCredentials: true
             };
 
-            const idResponse = await axios.get('/api/Allvirtual-cards', config);
-            if (!idResponse.data?.data || !Array.isArray(idResponse.data.data)) {
-                throw new Error('Invalid cards data received');
-            }
-
-            // Get first card ID
-            const cardId = idResponse.data.data[0]?.id;
-
             const response = await axios.post(
-                `/api/virtual-cards/verify-pin/${cardId}`,
+                `${import.meta.env.VITE_API_URL}/virtual-cards/verify-pin/${card.card_id}`,
                 { pin },
                 config
             );
-            console.log(cardId)
 
             if (response.data.status === 'success') {
                 onSuccess();
@@ -274,13 +447,11 @@ const CardPasscodeModal = ({ card, onSuccess, onClose }) => {
                                             newPin[index] = e.target.value.replace(/\D/g, '');
                                             setPin(newPin.join('').slice(0, 4));
 
-                                            // Auto-focus next input
                                             if (e.target.value && index < 3) {
                                                 document.getElementById(`pin-${index + 1}`)?.focus();
                                             }
                                         }}
                                         onKeyDown={(e) => {
-                                            // Handle backspace to move to previous input
                                             if (e.key === 'Backspace' && !pin[index] && index > 0) {
                                                 document.getElementById(`pin-${index - 1}`)?.focus();
                                             }
@@ -322,11 +493,17 @@ const CardPasscodeModal = ({ card, onSuccess, onClose }) => {
     );
 };
 
-const CardModalContent = ({ initialCardType, onCardTypeChange, closeModal, onCreateCard }) => {
-
+const CardModalContent = ({ initialCardType, onCardTypeChange, closeModal, onCreateCard, provider, cardholderId, selectedCard }) => {
     return (
         <CardLayout cardTitle="New Virtual Card" closeModal={closeModal}>
-            <NewVirtualCardForm initialCardType={initialCardType} onCardTypeChange={onCardTypeChange} onCreateCard={onCreateCard} />
+            <NewVirtualCardForm
+                initialCardType={initialCardType}
+                onCardTypeChange={onCardTypeChange}
+                onCreateCard={onCreateCard}
+                provider={provider}
+                cardholderId={cardholderId}
+                selectedCard={selectedCard}
+            />
         </CardLayout>
     );
 };

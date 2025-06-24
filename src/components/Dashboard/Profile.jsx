@@ -13,7 +13,7 @@ const Profile = ({ setIsSidebarOpen, toggleIconsOnly, iconsOnly }) => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axios.get('/api/api2/user');
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`);
                 setUser(response.data);
             } catch (err) {
                 console.error('Error fetching user data:', err);
