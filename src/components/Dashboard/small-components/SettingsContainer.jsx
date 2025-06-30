@@ -20,7 +20,7 @@ const AddBankModal = ({ onClose }) => {
     useEffect(() => {
         const fetchBankDetails = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/bank-accounts`);
+                const response = await axios.get(`/api/bank-accounts`);
                 if (response.data?.data?.length > 0) {
                     setBankDetails(response.data.data[0]);
                 }
@@ -58,7 +58,7 @@ const AddBankModal = ({ onClose }) => {
         try {
             const xsrfToken = Cookies.get('XSRF-TOKEN');
 
-            await axios.post(`${import.meta.env.VITE_API_URL}/bank-accounts/store`, {
+            await axios.post(`/api/bank-accounts/store`, {
                 bank_name: formData.bank_name,
                 account_number: formData.account_number,
                 account_name: formData.account_name,

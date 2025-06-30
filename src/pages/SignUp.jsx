@@ -39,8 +39,9 @@ const SignUp = () => {
         }
 
         try {
+            // ${import.meta.env.VITE_API_URL}
 
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/register`, formData, {
+            const response = await axios.post(`/api/register`, formData, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',

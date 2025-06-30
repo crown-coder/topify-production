@@ -49,7 +49,7 @@ const ElectricityPaymentForm = ({
     useEffect(() => {
         const fetchWalletBalance = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`);
+                const response = await axios.get(`/api/api2/user`);
                 const balance = parseFloat(response.data?.wallet?.balance || 0);
                 setWalletBalance(balance);
             } catch (err) {
@@ -77,7 +77,7 @@ const ElectricityPaymentForm = ({
 
         const meter_type = type.toLowerCase();
         const disco_name = getDiscoName(company);
-        const url = `${import.meta.env.VITE_API_URL}/validate_meter?meter_number=${meterNumber}&disco_name=${disco_name}&meter_type=${meter_type}`;
+        const url = `/api/validate_meter?meter_number=${meterNumber}&disco_name=${disco_name}&meter_type=${meter_type}`;
 
         try {
             setIsValidating(true);
@@ -145,7 +145,7 @@ const ElectricityPaymentForm = ({
 
         try {
             const response = await api.post(
-                `${import.meta.env.VITE_API_URL}/electricity_bill_payments`,
+                `/api/electricity_bill_payments`,
                 {
                     electricity_distributor_id: discoIdMap[company] || 0,
                     disco_name: getDiscoName(company),

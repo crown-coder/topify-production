@@ -10,7 +10,7 @@ const ReferralRewards = () => {
 
     const fetchReferralData = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/referrals`)
+            const response = await axios.get(`/api/referrals`)
             const data = response.data
             setTotalReferral(data.length)
 

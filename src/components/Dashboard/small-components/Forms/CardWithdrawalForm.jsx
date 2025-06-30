@@ -4,8 +4,10 @@ import { BsBank2 } from "react-icons/bs";
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 
-const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) => {
+const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, closeModal }) => {
+    const navigate = useNavigate();
     const [amount, setAmount] = useState('');
     const [withdrawalType, setWithdrawalType] = useState('wallet');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15,8 +17,14 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
     const [userBanks, setUserBanks] = useState([]);
     const [selectedBank, setSelectedBank] = useState('');
     const [isLoadingBanks, setIsLoadingBanks] = useState(false);
-    const MINIMUM_AMOUNT = 500;
+    let MINIMUM_AMOUNT = 500;
 
+    if (cardCurrency === 'USD') {
+        MINIMUM_AMOUNT = 1; // Minimum funding amount in USD
+    } else if (cardCurrency === 'NGN') {
+        MINIMUM_AMOUNT = 1000; // Minimum funding amount in NGN
+
+    }
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
@@ -33,8 +41,8 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
                 };
 
                 const [cardsResponse, rateResponse] = await Promise.all([
-                    axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards`, config),
-                    axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`)
+                    axios.get(`/api/Allvirtual-cards`, config),
+                    axios.post(`/api/getExchangeRates`)
                 ]);
 
                 const matchingCard = cardsResponse.data.data.find(card => card.id === currentCardId);
@@ -73,7 +81,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
                     withCredentials: true
                 };
 
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/bank-accounts`, config);
+                const response = await axios.get(`/api/bank-accounts`, config);
                 if (response.data?.data?.length > 0) {
                     setUserBanks(response.data.data);
                     setSelectedBank(response.data.data[0].id); // Select first bank by default
@@ -111,19 +119,36 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
         }
     };
 
-    const formatCurrency = (value) => {
-        return parseFloat(value || 0).toLocaleString('en-US', {
+    const formatCurrency = (value, currency = 'NGN') => {
+        const numericValue = parseFloat(value || 0);
+        if (isNaN(numericValue)) return '0.00';
+
+        return numericValue.toLocaleString('en-US', {
+            style: 'currency',
+            currency: currency,
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        });
+        }).replace(/^[^\d]*/, ''); // Remove currency symbol for custom formatting
     };
 
     const validateForm = () => {
         const amountValue = parseFloat(amount);
-
-        if (!amount || isNaN(amountValue) || amountValue < MINIMUM_AMOUNT) {
+        if (isNaN(amountValue)) {
             setMessage({
-                text: `Minimum withdrawal amount is ₦${MINIMUM_AMOUNT.toLocaleString()}`,
+                text: 'Please enter a valid amount',
+                isSuccess: false
+            });
+            return false;
+        }
+
+        // Convert USD to NGN for validation if card is USD
+        const validationAmount = cardCurrency === "USD" ? amountValue * exchangeRate : amountValue;
+
+        if (validationAmount < MINIMUM_AMOUNT) {
+            setMessage({
+                text: `Minimum withdrawal amount is ${cardCurrency === "USD"
+                    ? `$${(MINIMUM_AMOUNT / exchangeRate).toFixed(2)} (₦${MINIMUM_AMOUNT.toLocaleString()})`
+                    : `₦${MINIMUM_AMOUNT.toLocaleString()}`}`,
                 isSuccess: false
             });
             return false;
@@ -131,7 +156,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
 
         if (amountValue > cardBalance) {
             setMessage({
-                text: `Insufficient card balance (Available: ₦${formatCurrency(cardBalance)})`,
+                text: `Insufficient card balance (Available: ${cardCurrency === "USD" ? '$' : '₦'}${formatCurrency(cardBalance)})`,
                 isSuccess: false
             });
             return false;
@@ -165,10 +190,12 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
                 withCredentials: true
             };
 
+            // For USD cards, we send the dollar amount
             const payload = {
                 type: withdrawalType,
                 amount: amount.toString(),
-                card_id: cardId
+                card_id: cardId,
+                currency: cardCurrency // Include currency in payload
             };
 
             if (withdrawalType === 'bank') {
@@ -180,12 +207,11 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
             }
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/api/virtual-cards/payout`,
+                `/api/virtual-cards/payout`,
                 payload,
                 config
             );
 
-            // Enhanced success detection
             const isSuccess = response.data?.success ||
                 response.data?.status?.toLowerCase() === 'success' ||
                 response.status === 200;
@@ -205,7 +231,8 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
                 onSuccess({
                     amount: parseFloat(amount),
                     cardId,
-                    newBalance
+                    newBalance,
+                    currency: cardCurrency
                 });
             }
         } catch (err) {
@@ -216,6 +243,8 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
 
             if (err.response?.data?.error?.includes('card not found')) {
                 errorMsg = 'Card not found. Please check the card details.';
+            } else if (err.response?.data?.error?.includes('insufficient funds')) {
+                errorMsg = 'Insufficient funds for this transaction.';
             }
 
             setMessage({ text: errorMsg, isSuccess: false });
@@ -224,8 +253,13 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
         }
     };
 
-    const calculateDollarAmount = () => {
-        return amount ? (parseFloat(amount) / exchangeRate).toFixed(2) : '0.00';
+    const calculateNairaAmount = () => {
+        if (!amount || isNaN(parseFloat(amount))) return '0.00';
+
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(parseFloat(amount) * exchangeRate);
     };
 
     const getSelectedBankDetails = () => {
@@ -251,18 +285,23 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
         );
     };
 
+    const handleAddAccount = () => {
+        navigate('/dashboard/settings');
+        closeModal();
+    }
+
     return (
         <div className="max-w-md mx-auto">
             <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <div className="flex justify-between items-center">
                     <p className="text-sm text-gray-700">Card Balance:</p>
                     <p className="text-lg font-bold text-gray-800">
-                        ₦{formatCurrency(cardBalance)}
+                        {cardCurrency === "NGN" ? '₦' : '$'}{formatCurrency(cardBalance)}
                     </p>
                 </div>
                 <div className="mt-2 text-xs text-gray-500 flex items-center">
                     <FiInfo className="mr-1" />
-                    Minimum withdrawal amount: ₦{MINIMUM_AMOUNT.toLocaleString()}
+                    Minimum funding amount: {cardCurrency === 'NGN' ? '₦' : '$'}{MINIMUM_AMOUNT.toLocaleString()}
                 </div>
             </div>
 
@@ -287,107 +326,129 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId }) 
             )}
 
             <form onSubmit={handleSubmit}>
-                <div className="mb-6">
-                    <label htmlFor="amount" className="block text-gray-700 text-sm font-medium mb-2">
-                        Amount to Withdraw (₦)
-                    </label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500">₦</span>
-                        </div>
-                        <input
-                            type="text"
-                            id="amount"
-                            name="amount"
-                            value={amount ? formatCurrency(amount) : ''}
-                            onChange={handleAmountChange}
-                            className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="0.00"
-                            inputMode="decimal"
-                            required
-                        />
-                    </div>
-                </div>
-
-                <div className="mb-6">
-                    <label htmlFor="withdrawalType" className="block text-gray-700 text-sm font-medium mb-2">
-                        Withdrawal Method
-                    </label>
-                    <div className="relative">
-                        <select
-                            id="withdrawalType"
-                            value={withdrawalType}
-                            onChange={(e) => setWithdrawalType(e.target.value)}
-                            className="block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="wallet">Wallet</option>
-                            <option value="bank">Bank Account</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <BsBank2 className="text-gray-400" />
-                        </div>
-                    </div>
-                </div>
-
-                {withdrawalType === 'bank' && (
-                    <div className="mb-4">
-                        <label htmlFor="bankAccount" className="block text-gray-700 text-sm font-medium mb-2">
-                            Select Bank Account
+                <div className='h-[320px] overflow-y-scroll'>
+                    <div className="mb-6">
+                        <label htmlFor="amount" className="block text-gray-700 text-sm font-medium mb-2">
+                            Amount to Withdraw ({cardCurrency === "NGN" ? '₦' : '$'})
                         </label>
-                        {isLoadingBanks ? (
-                            <div className="p-4 text-center text-gray-500">
-                                Loading bank accounts...
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span className="text-gray-500">{cardCurrency === "NGN" ? '₦' : '$'}</span>
                             </div>
-                        ) : userBanks.length > 0 ? (
-                            <>
-                                <select
-                                    id="bankAccount"
-                                    value={selectedBank}
-                                    onChange={(e) => setSelectedBank(e.target.value)}
-                                    className="block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    {userBanks.map(bank => (
-                                        <option key={bank.id} value={bank.id}>
-                                            {bank.bank_name} - {bank.account_number}
-                                        </option>
-                                    ))}
-                                </select>
-                                {getSelectedBankDetails()}
-                            </>
-                        ) : (
-                            <div className="p-3 bg-yellow-50 text-yellow-700 rounded-md text-sm">
-                                No bank accounts found. Please add a bank account first.
+                            <input
+                                type="text"
+                                id="amount"
+                                name="amount"
+                                value={amount}
+                                onChange={handleAmountChange}
+                                className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                placeholder={cardCurrency === "NGN" ? "0.00" : "0.00"}
+                                inputMode="decimal"
+                                required
+                            />
+                        </div>
+                        {/* {amount && !isNaN(parseFloat(amount)) && cardCurrency === "USD" && (
+                            <div className="mt-1 text-xs text-gray-500">
+                                ≈ ₦{calculateNairaAmount()}
                             </div>
-                        )}
+                        )} */}
                     </div>
-                )}
 
-                {cardCurrency !== "NGN" && (
-                    <div className="mb-6 space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                            <div className="flex items-center text-sm text-gray-600">
-                                <FiDollarSign className="mr-2" />
-                                <span>NGN/USD Rate</span>
+                    <div className="mb-6">
+                        <label htmlFor="withdrawalType" className="block text-gray-700 text-sm font-medium mb-2">
+                            Withdrawal Method
+                        </label>
+                        <div className="relative">
+                            <select
+                                id="withdrawalType"
+                                value={withdrawalType}
+                                onChange={(e) => setWithdrawalType(e.target.value)}
+                                className="block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="wallet">Wallet</option>
+                                <option value="bank">Bank Account</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <BsBank2 className="text-gray-400" />
                             </div>
-                            <span className="text-sm font-medium">₦{formatCurrency(exchangeRate)}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-100 rounded">
-                            <div className="text-sm font-medium text-gray-700">
-                                <span>You'll receive</span>
-                            </div>
-                            <span className="text-sm font-bold">
-                                ${calculateDollarAmount()}
-                            </span>
                         </div>
                     </div>
-                )}
+
+                    {withdrawalType === 'bank' && (
+                        <div className="mb-4">
+                            <label htmlFor="bankAccount" className="block text-gray-700 text-sm font-medium mb-2">
+                                Select Bank Account
+                            </label>
+                            {isLoadingBanks ? (
+                                <div className="p-4 text-center text-gray-500">
+                                    Loading bank accounts...
+                                </div>
+                            ) : userBanks.length > 0 ? (
+                                <>
+                                    <select
+                                        id="bankAccount"
+                                        value={selectedBank}
+                                        onChange={(e) => setSelectedBank(e.target.value)}
+                                        className="block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        {userBanks.map(bank => (
+                                            <option key={bank.id} value={bank.id}>
+                                                {bank.bank_name} - {bank.account_number}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {getSelectedBankDetails()}
+                                </>
+                            ) : (
+                                <div className="p-3 bg-yellow-50 text-yellow-700 rounded-md text-sm">
+                                    No bank accounts found. Please add a bank account first.
+                                    <button
+                                        onClick={handleAddAccount}
+                                        className="ml-2 text-blue-600 hover:text-blue-800"
+                                        aria-label="Add Bank Account"
+                                    >
+                                        Add Account
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {cardCurrency === "USD" && (
+                        <div className="mb-6 space-y-3">
+                            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <div className="flex items-center text-sm text-gray-600">
+                                    <FiDollarSign className="mr-2" />
+                                    <span>USD/NGN Rate</span>
+                                </div>
+                                <span className="text-sm font-medium">₦{formatCurrency(exchangeRate)}</span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-gray-100 rounded">
+                                <div className="text-sm font-medium text-gray-700">
+                                    <span>You'll receive</span>
+                                </div>
+                                <span className="text-sm font-bold">
+                                    ₦{calculateNairaAmount()}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
 
                 <button
                     type="submit"
-                    disabled={isSubmitting || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) < MINIMUM_AMOUNT || (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))}
-                    className={`w-full py-3 px-4 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${isSubmitting || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) < MINIMUM_AMOUNT || (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))
-                        ? 'bg-blue-400 cursor-not-allowed'
-                        : 'bg-[#4CACF0] hover:bg-[#3A9BDE]'
+                    disabled={isSubmitting || !amount || isNaN(parseFloat(amount)) ||
+                        (cardCurrency === "NGN" && parseFloat(amount) < MINIMUM_AMOUNT) ||
+                        (cardCurrency === "USD" && (parseFloat(amount) * exchangeRate) < MINIMUM_AMOUNT) ||
+                        (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))}
+                    className={`w-full py-3 px-4 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors 
+                        ${isSubmitting || !amount || isNaN(parseFloat(amount)) ||
+                            (cardCurrency === "NGN" && parseFloat(amount) < MINIMUM_AMOUNT) ||
+                            (cardCurrency === "USD" && (parseFloat(amount) * exchangeRate) < MINIMUM_AMOUNT) ||
+                            (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))
+                            ? 'bg-blue-400 cursor-not-allowed'
+                            : 'bg-[#4CACF0] hover:bg-[#3A9BDE]'
                         }`}
                 >
                     {isSubmitting ? (

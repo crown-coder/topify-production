@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -15,32 +15,37 @@ const OtpModal = ({ onVerify, onResend, onClose }) => {
 
         setIsSubmitting(true);
         setError('');
+        await localStorage.setItem('otp_code', otp);
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/verify-otp`,
+                `/api/verify-otp`,
                 { otp },
                 {
                     headers: {
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': Cookies.get('XSRF-TOKEN'),
+                    },
+                    withCredentials: true,
                 }
             );
 
             if (response.data.success) {
-                // Set secure cookie before calling onVerify
-                Cookies.set('otp_verified_token', response.data.token, {
-                    expires: 1, // 1 day expiration
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'strict'
-                });
-                onVerify();
+                localStorage.setItem('otp_code', otp);
+                setError('OTP verified successfully!');
+
+                onVerify(otp);
+
+                // Then close the modal after state updates
+                setTimeout(() => {
+                    if (onClose) onClose();
+                }, 300);
             } else {
                 setError(response.data.message || 'OTP verification failed');
             }
         } catch (error) {
             console.error('OTP verification error:', error);
-            setError(error.response?.data?.message || 'An error occurred during verification');
+            setError(error.response?.data?.message || 'An error occurred');
         } finally {
             setIsSubmitting(false);
         }
@@ -70,6 +75,21 @@ const OtpModal = ({ onVerify, onResend, onClose }) => {
         }
     };
 
+    useEffect(() => {
+        const successKeywords = ['successfully', 'verified'];
+        const shouldClose = successKeywords.some(word =>
+            error.toLowerCase().includes(word)
+        );
+
+        if (shouldClose && onClose) {
+            const timer = setTimeout(() => {
+                onClose();
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [error, onClose]);
+
     return (
         <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
@@ -88,9 +108,9 @@ const OtpModal = ({ onVerify, onResend, onClose }) => {
             </p>
 
             {error && (
-                <div className={`mb-4 p-2 rounded ${error.toLowerCase().includes('otp verified')
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-red-100 text-red-700'
+                <div className={`mb-4 p-2 rounded ${error.toLowerCase().includes('success') || error.toLowerCase().includes('verified')
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-red-100 text-red-700'
                     }`}>
                     {error}
                 </div>

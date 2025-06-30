@@ -32,7 +32,7 @@ const NewVirtualCardForm = ({ onCreateCard, closeModal, selectedCard }) => {
 
     useEffect(() => {
         fetchWalletBalance();
-    }, []);π
+    }, []);
 
 
     //fetch exchange rate

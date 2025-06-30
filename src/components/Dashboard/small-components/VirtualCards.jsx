@@ -10,6 +10,7 @@ import NewVirtualCardForm from './Forms/NewVirtualCardForm';
 import CardSelectionModal from './CardSelectionModal';
 import KycModal from './KycModal';
 import Cookies from 'js-cookie';
+import GeneralLoader from './GeneralLoader';
 
 const VirtualCards = () => {
     const [cardType, setCardType] = useState('Naira');
@@ -35,7 +36,7 @@ const VirtualCards = () => {
                 withCredentials: true
             };
 
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, config);
+            const response = await axios.get(`/api/api2/user`, config);
             setUserData(response.data);
             return response.data;
         } catch (err) {
@@ -47,7 +48,7 @@ const VirtualCards = () => {
     const fetchAvailableCardTypes = async () => {
         try {
             const xsrfToken = Cookies.get('XSRF-TOKEN');
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
+            const response = await axios.post(`/api/getCardType`, {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -98,7 +99,7 @@ const VirtualCards = () => {
                 withCredentials: true
             };
 
-            const idResponse = await axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards?provider=${provider}`, config);
+            const idResponse = await axios.get(`/api/Allvirtual-cards?provider=${provider}`, config);
             const cardList = idResponse.data?.data || [];
 
             // console.log('Fetched cards:', cardList.Array.isArray(cardList) ? cardList.length : 0);
@@ -109,7 +110,7 @@ const VirtualCards = () => {
             }
 
             const detailPromises = cardList.map(card =>
-                axios.get(`${import.meta.env.VITE_API_URL}/virtual-cards/${card.id}/details`, config)
+                axios.get(`/api/virtual-cards/${card.id}/details`, config)
             );
 
             const detailResponses = await Promise.all(detailPromises);
@@ -220,7 +221,7 @@ const VirtualCards = () => {
                 card={card}
                 onSuccess={() => {
                     closeModal();
-                    navigate(`/dashboard/virtual-card/card-details/${card.card_id}`, {
+                    navigate(`/dashboard/virtual-card/card-details/${card.card_id}/${card.card_currency}`, {
                         state: card
                     });
                 }}
@@ -274,9 +275,7 @@ const VirtualCards = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="relative my-2 p-5 rounded-xl w-full bg-white"
             >
-                <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
+                <GeneralLoader />
             </motion.div>
         );
     }
@@ -355,7 +354,7 @@ const VirtualCards = () => {
                             key={card.card_id}
                             cardId={card.card_id}
                             cardName={card.card_type_info}
-                            className={card.card_currency === 'NGN' ? 'bg-blue-500' : 'bg-blue-950'}
+                            className={card.card_currency === 'NGN' ? 'bg-blue-500' : 'bg-gradient-to-b from-blue-950 via-blue-900 to-blue-950'}
                             onClick={() => handleCardPress(card)}
                             cardNumber={`**** **** **** ${card.last_4}`}
                             lastFour={card.last_4}
@@ -398,7 +397,7 @@ const CardPasscodeModal = ({ card, onSuccess, onClose }) => {
             };
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/verify-pin/${card.card_id}`,
+                `/api/virtual-cards/verify-pin/${card.card_id}`,
                 { pin },
                 config
             );

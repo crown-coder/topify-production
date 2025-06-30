@@ -11,6 +11,7 @@ import { IoTrophyOutline, IoRefresh } from "react-icons/io5";
 import { BiHide } from "react-icons/bi";
 import { RxEyeOpen } from "react-icons/rx";
 import { MdVerified } from "react-icons/md";
+import Cookies from 'js-cookie';
 
 const Balance = () => {
   const [isShowBalance, setIsShowBalance] = useState(true);
@@ -19,6 +20,32 @@ const Balance = () => {
   const [refreshing, setRefreshing] = useState(false);
   const { openModal, closeModal } = useModal();
   const [isKYCCompleted, setIsKYCCompleted] = useState(false);
+  const [verified, setVerified] = useState(false);
+
+  const [isEmailVerified, setIsEmailVerified] = useState(false)
+
+  const xsrfToken = Cookies.get('XSRF-TOKEN');
+
+  const handleVerifyClick = async () => {
+    try {
+      const response = await axios.post(`/api/email/verification-notification`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-XSRF-TOKEN': xsrfToken,
+          },
+          withCredentials: true,
+        }
+      )
+
+      console.log(response.data)
+      setVerified(true);
+
+    } catch (err) {
+      console.error("Error Sending Verification Email", err)
+    }
+
+  };
 
   const handleKYCModal = () => {
     openModal(
@@ -27,8 +54,9 @@ const Balance = () => {
   };
 
   const fetchUserData = async () => {
+    setLoading(true)
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`,
+      const response = await axios.get(`/api/api2/user`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -37,8 +65,11 @@ const Balance = () => {
           withCredentials: true,
         });
 
+      setIsEmailVerified(response.data.email_verified_at)
+
       setUser(response.data);
       setIsKYCCompleted(response.data.kyc_verified);
+      setLoading(false)
     } catch (err) {
       console.error('Error fetching user data:', err);
     } finally {
@@ -65,7 +96,27 @@ const Balance = () => {
   };
 
   return (
-    <div className='p-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
+    <div className='p-2 bg-white  w-full my-2 rounded-xl'>
+
+      {!isEmailVerified && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 rounded-md max-w-md mb-2">
+          {!verified ? (
+            <p>
+              You haven't verified your email. Click{' '}
+              <button
+                onClick={handleVerifyClick}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                here
+              </button>{' '}
+              to verify.
+            </p>
+          ) : (
+            <p>We have sent you an email to verify.</p>
+          )}
+        </div>
+      )}
+
       <div className='w-full flex justify-between items-center'>
         <div>
           <h2 className='font-semibold text-lg mb-[2px] text-[#434343] dark:text-white'>

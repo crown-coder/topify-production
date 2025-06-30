@@ -4,9 +4,11 @@ import Cookies from 'js-cookie';
 import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import AlertBox from './AlertBox';
 
-const FormField = ({ label, name, value, onChange, placeholder, error, type = 'text' }) => (
+const FormField = ({ label, name, value, onChange, placeholder, error, type = 'text', required = true }) => (
     <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+            {label} {required && <span className="text-red-500">*</span>}
+        </label>
         <input
             type={type}
             name={name}
@@ -14,7 +16,7 @@ const FormField = ({ label, name, value, onChange, placeholder, error, type = 't
             onChange={onChange}
             placeholder={placeholder}
             className={`w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm ${error ? 'border-red-500' : 'border-gray-300'}`}
-            required
+            required={required}
         />
         {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
@@ -51,33 +53,18 @@ const CameraModal = ({ onCapture, onCancel, videoRef, canvasRef }) => (
 );
 
 const CreateVirtualCard = ({ onCardCreated }) => {
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        address: '',
-        dateOfBirth: '',
-        city: '',
-        state: '',
-        country: 'Nigeria',
-        postal_code: '',
-        house_no: '',
-        id_type: 'bvn',
-        bvn_number: '',
-        nin_number: '',
-        passport_number: '',
-        card_type_id: '',
-    });
-
     const xsrfToken = Cookies.get('XSRF-TOKEN');
-
     const [alert, setAlert] = useState({
         show: false,
         message: '',
-        type: 'success' // 'success', 'error', 'warning', 'info'
+        type: 'success'
     });
 
     const [cardsAvailable, setCardsAvailable] = useState([]);
     const [selectedCard, setSelectedCard] = useState(null);
+    const [fieldRequirements, setFieldRequirements] = useState(null);
+    const [isLoadingFields, setIsLoadingFields] = useState(false);
+    const [formData, setFormData] = useState({});
     const [selfieImage, setSelfieImage] = useState(null);
     const [selfiePreview, setSelfiePreview] = useState('');
     const [frontIdImage, setFrontIdImage] = useState(null);
@@ -93,7 +80,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
     const fetchAvailableCards = async () => {
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
+            const response = await axios.post('/api/getCardType', {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -105,7 +92,6 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             setCardsAvailable(activeCards);
         } catch (error) {
             console.error("Error fetching available cards:", error);
-
             setAlert({
                 show: true,
                 message: "Failed to fetch available cards. Please try again later.",
@@ -114,9 +100,66 @@ const CreateVirtualCard = ({ onCardCreated }) => {
         }
     };
 
+    const fetchFieldRequirements = async (cardId) => {
+        setIsLoadingFields(true);
+        try {
+            const response = await axios.get(`/api/card-types/${cardId}/fields`, {
+                headers: {
+                    'X-XSRF-TOKEN': xsrfToken,
+                },
+                withCredentials: true,
+            });
+
+            setFieldRequirements(response.data.data);
+
+            const initialFormData = {};
+            const requirements = response.data.data.required_fields;
+
+            Object.keys(requirements).forEach(field => {
+                if (!['selfie_image', 'front_card', 'back_card', 'passport_image'].includes(field)) {
+                    initialFormData[field] = '';
+                }
+            });
+
+            if (requirements.id_type && requirements.id_type.includes('required')) {
+                if (requirements.id_type.includes('passport')) {
+                    initialFormData.id_type = 'passport';
+                } else if (requirements.id_type.includes('nin')) {
+                    initialFormData.id_type = 'nin';
+                } else if (requirements.id_type.includes('bvn')) {
+                    initialFormData.id_type = 'bvn';
+                }
+            }
+
+            setFormData(initialFormData);
+
+        } catch (error) {
+            console.error("Error fetching field requirements:", error);
+            setAlert({
+                show: true,
+                message: "Failed to load form requirements. Please try again.",
+                type: "error"
+            });
+        } finally {
+            setIsLoadingFields(false);
+        }
+    };
+
     useEffect(() => {
         fetchAvailableCards();
     }, []);
+
+    const handleCardSelect = async (card) => {
+        setSelectedCard(card);
+        setErrors({});
+        setSelfieImage(null);
+        setSelfiePreview('');
+        setFrontIdImage(null);
+        setFrontIdPreview('');
+        setBackIdImage(null);
+        setBackIdPreview('');
+        await fetchFieldRequirements(card.id);
+    };
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
@@ -127,35 +170,47 @@ const CreateVirtualCard = ({ onCardCreated }) => {
     }, [errors]);
 
     const validateForm = () => {
+        if (!fieldRequirements) return {};
+
         const newErrors = {};
-        if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-        if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-        if (!formData.address.trim()) newErrors.address = 'Address is required';
-        if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
-        if (!formData.city.trim()) newErrors.city = 'City is required';
-        if (!formData.state.trim()) newErrors.state = 'State is required';
-        if (!formData.postal_code.trim()) newErrors.postal_code = 'Postal code is required';
-        if (!formData.house_no.trim()) newErrors.house_no = 'House number is required';
-        if (!formData.card_type_id) newErrors.card_type_id = 'Card type is required';
+        const requirements = fieldRequirements.required_fields;
 
-        if (!formData.bvn_number || formData.bvn_number.length !== 11 || !/^\d+$/.test(formData.bvn_number)) {
-            newErrors.bvn_number = 'BVN must be 11 digits';
-        }
+        Object.entries(requirements).forEach(([field, requirement]) => {
+            if (requirement.includes('required')) {
+                if (field === 'selfie_image' && !selfieImage) {
+                    newErrors.selfie = 'Selfie image is required';
+                }
+                else if (field === 'front_card' && !frontIdImage &&
+                    (requirements.id_type?.includes('nin') || formData.id_type === 'nin')) {
+                    newErrors.frontId = 'Front of ID is required';
+                }
+                else if (field === 'back_card' && !backIdImage &&
+                    (requirements.id_type?.includes('nin') || formData.id_type === 'nin')) {
+                    newErrors.backId = 'Back of ID is required';
+                }
+                else if (field === 'passport_image' && !frontIdImage &&
+                    (requirements.id_type?.includes('passport') || formData.id_type === 'passport')) {
+                    newErrors.frontId = 'Passport image is required';
+                }
+                else if (!['selfie_image', 'front_card', 'back_card', 'passport_image'].includes(field)) {
+                    if (!formData[field]) {
+                        newErrors[field] = `${field.replace(/_/g, ' ')} is required`;
+                    }
+                }
+            }
 
-        if (formData.id_type === 'nin') {
-            if (!formData.nin_number || !/^\d+$/.test(formData.nin_number)) {
+            if ((field === 'bank_id_number' || field === 'bvn_number') &&
+                (!formData[field] || formData[field].length !== 11 || !/^\d+$/.test(formData[field]))) {
+                newErrors[field] = 'Must be 11 digits';
+            }
+            if (field === 'nin_number' && (!formData.nin_number || !/^\d+$/.test(formData.nin_number))) {
                 newErrors.nin_number = 'Valid NIN is required';
             }
-            if (!frontIdImage) newErrors.frontId = 'Front of ID is required';
-            if (!backIdImage) newErrors.backId = 'Back of ID is required';
-        } else if (formData.id_type === 'passport') {
-            if (!formData.passport_number || !/^\d+$/.test(formData.passport_number)) {
-                newErrors.passport_number = 'Valid passport number is required';
+            if (field === 'passport_number' && !formData.passport_number) {
+                newErrors.passport_number = 'Passport number is required';
             }
-            if (!frontIdImage) newErrors.frontId = 'Passport image is required';
-        }
+        });
 
-        if (!selfieImage) newErrors.selfie = 'Selfie image is required';
         return newErrors;
     };
 
@@ -167,12 +222,15 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                 if (type === 'selfie') {
                     setSelfiePreview(reader.result);
                     setSelfieImage(file);
+                    if (errors.selfie) setErrors(prev => ({ ...prev, selfie: '' }));
                 } else if (type === 'frontId') {
                     setFrontIdPreview(reader.result);
                     setFrontIdImage(file);
+                    if (errors.frontId) setErrors(prev => ({ ...prev, frontId: '' }));
                 } else if (type === 'backId') {
                     setBackIdPreview(reader.result);
                     setBackIdImage(file);
+                    if (errors.backId) setErrors(prev => ({ ...prev, backId: '' }));
                 }
             };
             reader.readAsDataURL(file);
@@ -189,7 +247,11 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             setCameraType(type);
         } catch (err) {
             console.error("Error accessing camera:", err);
-            alert("Could not access camera. Please upload an image instead.");
+            setAlert({
+                show: true,
+                message: "Could not access camera. Please upload an image instead.",
+                type: "error"
+            });
         }
     };
 
@@ -221,12 +283,15 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                 if (cameraType === 'selfie') {
                     setSelfieImage(file);
                     setSelfiePreview(reader.result);
+                    if (errors.selfie) setErrors(prev => ({ ...prev, selfie: '' }));
                 } else if (cameraType === 'frontId') {
                     setFrontIdImage(file);
                     setFrontIdPreview(reader.result);
+                    if (errors.frontId) setErrors(prev => ({ ...prev, frontId: '' }));
                 } else if (cameraType === 'backId') {
                     setBackIdImage(file);
                     setBackIdPreview(reader.result);
+                    if (errors.backId) setErrors(prev => ({ ...prev, backId: '' }));
                 }
             };
             reader.readAsDataURL(canvas.toDataURL('image/jpeg'));
@@ -247,52 +312,29 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
         try {
             const formDataToSend = new FormData();
-            formDataToSend.append('card_type_id', formData.card_type_id);
-            formDataToSend.append('first_name', formData.firstName);
-            formDataToSend.append('last_name', formData.lastName);
-            formDataToSend.append('address', formData.address);
-            formDataToSend.append('date_of_birth', formData.dateOfBirth);
-            formDataToSend.append('country', formData.country);
-            formDataToSend.append('city', formData.city);
-            formDataToSend.append('state', formData.state);
-            formDataToSend.append('postal_code', formData.postal_code);
-            formDataToSend.append('house_no', formData.house_no);
+            formDataToSend.append('card_type_id', selectedCard.id); // Use selectedCard.id here
+            console.log('Card Id', selectedCard.id);
 
-            if (selectedCard?.provider === 'graph') {
-                formDataToSend.append('bank_id_number', formData.bvn_number);
-                formDataToSend.append('id_type', formData.id_type);
+            Object.entries(formData).forEach(([key, value]) => {
+                formDataToSend.append(key, value);
+            });
 
-                if (formData.id_type === 'bvn') {
-                    formDataToSend.append('bvn_number', formData.bvn_number);
-                } else if (formData.id_type === 'nin') {
-                    formDataToSend.append('nin_number', formData.nin_number);
-                    if (frontIdImage) formDataToSend.append('front_card', frontIdImage);
-                    if (backIdImage) formDataToSend.append('back_card', backIdImage);
+            if (selfieImage) formDataToSend.append('selfie_image', selfieImage);
+            if (frontIdImage) {
+                if (formData.id_type === 'nin') {
+                    formDataToSend.append('front_card', frontIdImage);
                 } else if (formData.id_type === 'passport') {
-                    formDataToSend.append('passport_number', formData.passport_number);
-                    if (frontIdImage) formDataToSend.append('passport_image', frontIdImage);
-                }
-            } else {
-                formDataToSend.append('id_type', formData.id_type);
-
-                if (formData.id_type === 'bvn') {
-                    formDataToSend.append('bvn_number', formData.bvn_number);
-                } else if (formData.id_type === 'nin') {
-                    formDataToSend.append('nin_number', formData.nin_number);
-                    if (frontIdImage) formDataToSend.append('front_card', frontIdImage);
-                    if (backIdImage) formDataToSend.append('back_card', backIdImage);
-                } else if (formData.id_type === 'passport') {
-                    formDataToSend.append('passport_number', formData.passport_number);
-                    if (frontIdImage) formDataToSend.append('passport_image', frontIdImage);
+                    formDataToSend.append('passport_image', frontIdImage);
+                } else {
+                    formDataToSend.append('front_card', frontIdImage);
                 }
             }
-
-            if (selfieImage) {
-                formDataToSend.append('selfie_image', selfieImage);
+            if (backIdImage) {
+                formDataToSend.append('back_card', backIdImage);
             }
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/create-holder`,
+                `/api/virtual-cards/create-holder`,
                 formDataToSend,
                 {
                     headers: {
@@ -323,229 +365,342 @@ const CreateVirtualCard = ({ onCardCreated }) => {
         }
     };
 
-    const handleCardSelect = (card) => {
-        setSelectedCard(card);
-        setFormData(prev => ({
-            ...prev,
-            card_type_id: card.id,
-            id_type: card.provider === 'graph' ? 'bvn' : prev.id_type
-        }));
-    };
+    const renderDynamicFields = () => {
+        if (!fieldRequirements) return null;
 
-    const renderIdFields = () => {
-        switch (formData.id_type) {
-            case 'nin':
-                return (
-                    <>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">NIN Number</label>
-                            <input
-                                type="text"
-                                name="nin_number"
-                                value={formData.nin_number}
-                                onChange={handleChange}
-                                placeholder="Enter your NIN"
-                                className={`w-full p-3 rounded-lg border text-gray-600 text-sm ${errors.nin_number ? 'border-red-500' : 'border-gray-300'}`}
-                                required
-                            />
-                            {errors.nin_number && (
-                                <p className="mt-1 text-xs text-red-500">{errors.nin_number}</p>
-                            )}
-                        </div>
+        const requirements = fieldRequirements.required_fields;
+        const fields = [];
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Front of ID</label>
-                                {frontIdPreview ? (
-                                    <div className="mb-2">
-                                        <img
-                                            src={frontIdPreview}
-                                            alt="Front ID preview"
-                                            className="h-32 w-full object-cover rounded-lg border"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setFrontIdPreview('');
-                                                setFrontIdImage(null);
-                                            }}
-                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                        >
-                                            Change Image
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <div className="flex space-x-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => startCamera('frontId')}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                                            >
-                                                Take Photo
-                                            </button>
-                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                                Upload Image
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={(e) => handleFileChange(e, 'frontId')}
-                                                    className="hidden"
-                                                />
-                                            </label>
-                                        </div>
-                                        {errors.frontId && (
-                                            <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+        fields.push(
+            <input
+                key="card_type_id"
+                type="hidden"
+                name="card_type_id"
+                value={selectedCard?.id || ''}
+            />
+        );
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Back of ID</label>
-                                {backIdPreview ? (
-                                    <div className="mb-2">
-                                        <img
-                                            src={backIdPreview}
-                                            alt="Back ID preview"
-                                            className="h-32 w-full object-cover rounded-lg border"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setBackIdPreview('');
-                                                setBackIdImage(null);
-                                            }}
-                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                        >
-                                            Change Image
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <div className="flex space-x-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => startCamera('backId')}
-                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                                            >
-                                                Take Photo
-                                            </button>
-                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                                Upload Image
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={(e) => handleFileChange(e, 'backId')}
-                                                    className="hidden"
-                                                />
-                                            </label>
-                                        </div>
-                                        {errors.backId && (
-                                            <p className="mt-1 text-xs text-red-500">{errors.backId}</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </>
+        const possibleStandardFields = [
+            'first_name', 'last_name', 'address', 'date_of_birth',
+            'issue_date', 'expiry_date'
+        ];
+
+        possibleStandardFields.forEach(field => {
+            if (requirements[field]?.includes('required')) {
+                fields.push(
+                    <FormField
+                        key={field}
+                        label={field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        name={field}
+                        value={formData[field] || ''}
+                        onChange={handleChange}
+                        placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                        error={errors[field]}
+                        required={true}
+                        type={field.includes('date') ? 'date' : 'text'}
+                    />
                 );
-            case 'passport':
-                return (
-                    <>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Passport Number</label>
-                            <input
-                                type="text"
-                                name="passport_number"
-                                value={formData.passport_number}
-                                onChange={handleChange}
-                                placeholder="Enter your passport number"
-                                className={`w-full p-3 rounded-lg border text-gray-600 text-sm ${errors.passport_number ? 'border-red-500' : 'border-gray-300'}`}
-                                required
-                            />
-                            {errors.passport_number && (
-                                <p className="mt-1 text-xs text-red-500">{errors.passport_number}</p>
-                            )}
-                        </div>
+            }
+        });
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Passport Image</label>
-                            {frontIdPreview ? (
-                                <div className="mb-2">
-                                    <img
-                                        src={frontIdPreview}
-                                        alt="Passport preview"
-                                        className="h-32 w-full object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFrontIdPreview('');
-                                            setFrontIdImage(null);
-                                        }}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                    >
-                                        Change Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex space-x-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => startCamera('frontId')}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                                        >
-                                            Take Photo
-                                        </button>
-                                        <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                            Upload Image
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'frontId')}
-                                                className="hidden"
-                                            />
-                                        </label>
-                                    </div>
-                                    {errors.frontId && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </>
-                );
-            case 'bvn':
-            default:
-                return (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">BVN Number</label>
-                        <input
-                            type="text"
-                            name="bvn_number"
-                            value={formData.bvn_number}
+        if (requirements.id_type && requirements.id_type.includes('required')) {
+            const options = [];
+            if (requirements.id_type.includes('bvn')) options.push('bvn');
+            if (requirements.id_type.includes('nin')) options.push('nin');
+            if (requirements.id_type.includes('passport')) options.push('passport');
+
+            if (options.length > 0) {
+                fields.push(
+                    <div key="id_type">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
+                        <select
+                            name="id_type"
+                            value={formData.id_type || ''}
                             onChange={handleChange}
-                            placeholder="22222222222"
-                            className={`w-full p-3 rounded-lg border text-gray-600 text-sm ${errors.bvn_number ? 'border-red-500' : 'border-gray-300'}`}
-                            inputMode="numeric"
-                            maxLength="11"
-                            required
-                        />
-                        {errors.bvn_number ? (
-                            <p className="mt-1 text-xs text-red-500">{errors.bvn_number}</p>
-                        ) : (
-                            <p className="mt-1 text-xs text-gray-500">Please fill your valid BVN (11 digits)</p>
+                            className={`w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm ${errors.id_type ? 'border-red-500' : 'border-gray-300'}`}
+                            required={requirements.id_type.includes('required')}
+                        >
+                            {options.length > 1 && <option value="">Select ID Type</option>}
+                            {options.map(option => (
+                                <option key={option} value={option}>
+                                    {option.toUpperCase()}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.id_type && (
+                            <p className="mt-1 text-xs text-red-500">{errors.id_type}</p>
                         )}
                     </div>
                 );
+            }
         }
+
+        if (requirements.bank_id_number || requirements.bvn_number) {
+            const fieldName = requirements.bank_id_number ? 'bank_id_number' : 'bvn_number';
+            fields.push(
+                <div key={fieldName}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {fieldName === 'bank_id_number' ? 'Bank ID Number' : 'BVN Number'}
+                    </label>
+                    <input
+                        type="text"
+                        name={fieldName}
+                        value={formData[fieldName] || ''}
+                        onChange={handleChange}
+                        placeholder="Enter 11-digit number"
+                        className={`w-full p-3 rounded-lg border text-gray-600 text-sm ${errors[fieldName] ? 'border-red-500' : 'border-gray-300'}`}
+                        inputMode="numeric"
+                        maxLength="11"
+                        required={requirements[fieldName]?.includes('required')}
+                    />
+                    {errors[fieldName] ? (
+                        <p className="mt-1 text-xs text-red-500">{errors[fieldName]}</p>
+                    ) : (
+                        <p className="mt-1 text-xs text-gray-500">Please enter your 11-digit {fieldName === 'bank_id_number' ? 'Bank ID' : 'BVN'}</p>
+                    )}
+                </div>
+            );
+        }
+
+        if (requirements.nin_number && (requirements.id_type?.includes('nin') || formData.id_type === 'nin')) {
+            fields.push(
+                <FormField
+                    key="nin_number"
+                    label="NIN Number"
+                    name="nin_number"
+                    value={formData.nin_number || ''}
+                    onChange={handleChange}
+                    placeholder="Enter your NIN"
+                    error={errors.nin_number}
+                    required={requirements.nin_number.includes('required')}
+                />
+            );
+        }
+
+        if (requirements.passport_number && (requirements.id_type?.includes('passport') || formData.id_type === 'passport')) {
+            fields.push(
+                <FormField
+                    key="passport_number"
+                    label="Passport Number"
+                    name="passport_number"
+                    value={formData.passport_number || ''}
+                    onChange={handleChange}
+                    placeholder="Enter your passport number"
+                    error={errors.passport_number}
+                    required={requirements.passport_number.includes('required')}
+                />
+            );
+        }
+
+        if (requirements.front_card && (requirements.id_type?.includes('nin') || formData.id_type === 'nin')) {
+            fields.push(
+                <div key="frontId">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Front of ID</label>
+                    {frontIdPreview ? (
+                        <div className="mb-2">
+                            <img
+                                src={frontIdPreview}
+                                alt="Front ID preview"
+                                className="h-32 w-full object-cover rounded-lg border"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setFrontIdPreview('');
+                                    setFrontIdImage(null);
+                                }}
+                                className="mt-2 text-sm text-red-600 hover:text-red-800"
+                            >
+                                Change Image
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <div className="flex space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={() => startCamera('frontId')}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                >
+                                    Take Photo
+                                </button>
+                                <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                    Upload Image
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleFileChange(e, 'frontId')}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                            {errors.frontId && (
+                                <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (requirements.back_card && (requirements.id_type?.includes('nin') || formData.id_type === 'nin')) {
+            fields.push(
+                <div key="backId">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Back of ID</label>
+                    {backIdPreview ? (
+                        <div className="mb-2">
+                            <img
+                                src={backIdPreview}
+                                alt="Back ID preview"
+                                className="h-32 w-full object-cover rounded-lg border"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBackIdPreview('');
+                                    setBackIdImage(null);
+                                }}
+                                className="mt-2 text-sm text-red-600 hover:text-red-800"
+                            >
+                                Change Image
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <div className="flex space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={() => startCamera('backId')}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                >
+                                    Take Photo
+                                </button>
+                                <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                    Upload Image
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleFileChange(e, 'backId')}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                            {errors.backId && (
+                                <p className="mt-1 text-xs text-red-500">{errors.backId}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (requirements.passport_image && (requirements.id_type?.includes('passport') || formData.id_type === 'passport')) {
+            fields.push(
+                <div key="passportImage">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Passport Image</label>
+                    {frontIdPreview ? (
+                        <div className="mb-2">
+                            <img
+                                src={frontIdPreview}
+                                alt="Passport preview"
+                                className="h-32 w-full object-cover rounded-lg border"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setFrontIdPreview('');
+                                    setFrontIdImage(null);
+                                }}
+                                className="mt-2 text-sm text-red-600 hover:text-red-800"
+                            >
+                                Change Image
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <div className="flex space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={() => startCamera('frontId')}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                >
+                                    Take Photo
+                                </button>
+                                <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                    Upload Image
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleFileChange(e, 'frontId')}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                            {errors.frontId && (
+                                <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        fields.push(
+            <div key="selfie">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Selfie Image</label>
+                {selfiePreview ? (
+                    <div className="flex items-center space-x-4">
+                        <div className="relative">
+                            <img
+                                src={selfiePreview}
+                                alt="Selfie preview"
+                                className="h-24 w-24 object-cover rounded-lg border"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelfiePreview('');
+                                    setSelfieImage(null);
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            >
+                                <XMarkIcon className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        <div className="flex space-x-3">
+                            <button
+                                type="button"
+                                onClick={() => startCamera('selfie')}
+                                className="px-4 py-2 bg-[#4CACF0] text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                            >
+                                Take Photo
+                            </button>
+                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors cursor-pointer">
+                                Upload Image
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileChange(e, 'selfie')}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                        {errors.selfie && (
+                            <p className="mt-1 text-xs text-red-500">{errors.selfie}</p>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+
+        return fields;
     };
 
     return (
         <div className="w-full p-6 bg-white rounded-xl shadow-sm mt-2">
-
             {alert.show && (
                 <AlertBox
                     message={alert.message}
@@ -556,7 +711,6 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             )}
 
             <div className="grid md:grid-cols-2 gap-8">
-                {/* Information Section */}
                 <div className="space-y-6">
                     <header className="space-y-2">
                         <h1 className="text-2xl font-semibold text-gray-800">Create Your Virtual Card</h1>
@@ -582,14 +736,15 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                     </div>
                 </div>
 
-                {/* Form Section */}
                 <div className="space-y-6">
                     <section>
                         <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
                             Card Application
                         </h2>
                         <p className="text-gray-600 text-sm mb-6">
-                            Fill the form below to create your card user account
+                            {selectedCard
+                                ? `Creating ${selectedCard.name} (${selectedCard.currency})`
+                                : "Select a card type to begin"}
                         </p>
                     </section>
 
@@ -602,7 +757,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                             {cardsAvailable.map(card => (
                                 <div
                                     key={card.id}
-                                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${formData.card_type_id === card.id ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}
+                                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedCard?.id === card.id ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}
                                     onClick={() => handleCardSelect(card)}
                                 >
                                     <label className="flex items-center space-x-2">
@@ -610,7 +765,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                                             type="radio"
                                             name="card_type_id"
                                             value={card.id}
-                                            checked={formData.card_type_id === card.id}
+                                            checked={selectedCard?.id === card.id}
                                             className="form-radio h-4 w-4 text-blue-600"
                                             onChange={() => { }}
                                             required
@@ -630,182 +785,45 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
                     {selectedCard && (
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    label="First Name"
-                                    name="firstName"
-                                    value={formData.firstName}
-                                    onChange={handleChange}
-                                    placeholder="First name"
-                                    error={errors.firstName}
-                                />
-                                <FormField
-                                    label="Last Name"
-                                    name="lastName"
-                                    value={formData.lastName}
-                                    onChange={handleChange}
-                                    placeholder="Last name"
-                                    error={errors.lastName}
-                                />
-                            </div>
+                            {isLoadingFields ? (
+                                <div className="flex justify-center items-center py-10">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                </div>
+                            ) : (
+                                <>
+                                    {renderDynamicFields()}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    label="Address"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleChange}
-                                    placeholder="Your current address"
-                                    error={errors.address}
-                                />
-                                <FormField
-                                    label="Date of Birth"
-                                    name="dateOfBirth"
-                                    value={formData.dateOfBirth}
-                                    onChange={handleChange}
-                                    placeholder="Your date of birth"
-                                    error={errors.dateOfBirth}
-                                    type="date"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    label="City"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                    placeholder="Your current city"
-                                    error={errors.city}
-                                />
-                                <FormField
-                                    label="State"
-                                    name="state"
-                                    value={formData.state}
-                                    onChange={handleChange}
-                                    placeholder="State"
-                                    error={errors.state}
-                                />
-                            </div>
+                                    {showCamera && (
+                                        <CameraModal
+                                            onCapture={captureImage}
+                                            onCancel={stopCamera}
+                                            videoRef={videoRef}
+                                            canvasRef={canvasRef}
+                                        />
+                                    )}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField
-                                    label="Postal Code"
-                                    name="postal_code"
-                                    value={formData.postal_code}
-                                    onChange={handleChange}
-                                    placeholder="Postal code"
-                                    error={errors.postal_code}
-                                />
-                                <FormField
-                                    label="House Number"
-                                    name="house_no"
-                                    value={formData.house_no}
-                                    onChange={handleChange}
-                                    placeholder="House number"
-                                    error={errors.house_no}
-                                />
-                            </div>
-
-                            {/* {selectedCard.provider !== 'graph' && ( */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
-                                <select
-                                    name="id_type"
-                                    value={formData.id_type}
-                                    onChange={handleChange}
-                                    className={`w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm ${errors.id_type ? 'border-red-500' : 'border-gray-300'}`}
-                                    required
-                                >
-                                    <option value="bvn">BVN</option>
-                                    <option value="nin">NIN</option>
-                                    <option value="passport">Passport</option>
-                                </select>
-                                {errors.id_type && (
-                                    <p className="mt-1 text-xs text-red-500">{errors.id_type}</p>
-                                )}
-                            </div>
-                            {/* )} */}
-
-                            {renderIdFields()}
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Selfie Image</label>
-                                {selfiePreview ? (
-                                    <div className="flex items-center space-x-4">
-                                        <div className="relative">
-                                            <img
-                                                src={selfiePreview}
-                                                alt="Selfie preview"
-                                                className="h-24 w-24 object-cover rounded-lg border"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelfiePreview('');
-                                                    setSelfieImage(null);
-                                                }}
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                                            >
-                                                <XMarkIcon className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        <div className="flex space-x-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => startCamera('selfie')}
-                                                className="px-4 py-2 bg-[#4CACF0] text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                                            >
-                                                Take Photo
-                                            </button>
-                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors cursor-pointer">
-                                                Upload Image
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={(e) => handleFileChange(e, 'selfie')}
-                                                    className="hidden"
-                                                />
-                                            </label>
-                                        </div>
-                                        {errors.selfie && (
-                                            <p className="mt-1 text-xs text-red-500">{errors.selfie}</p>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-colors ${isSubmitting
+                                            ? 'bg-blue-400 cursor-not-allowed'
+                                            : 'bg-[#4CACF0] hover:bg-[#3A9BDE] shadow-sm'
+                                            }`}
+                                    >
+                                        {isSubmitting ? (
+                                            <span className="flex items-center justify-center">
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Processing...
+                                            </span>
+                                        ) : (
+                                            'Register For Card'
                                         )}
-                                    </div>
-                                )}
-                            </div>
-
-                            {showCamera && (
-                                <CameraModal
-                                    onCapture={captureImage}
-                                    onCancel={stopCamera}
-                                    videoRef={videoRef}
-                                    canvasRef={canvasRef}
-                                />
+                                    </button>
+                                </>
                             )}
-
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-colors ${isSubmitting
-                                    ? 'bg-blue-400 cursor-not-allowed'
-                                    : 'bg-[#4CACF0] hover:bg-[#3A9BDE] shadow-sm'
-                                    }`}
-                            >
-                                {isSubmitting ? (
-                                    <span className="flex items-center justify-center">
-                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Processing...
-                                    </span>
-                                ) : (
-                                    'Register For Card'
-                                )}
-                            </button>
                         </form>
                     )}
                 </div>

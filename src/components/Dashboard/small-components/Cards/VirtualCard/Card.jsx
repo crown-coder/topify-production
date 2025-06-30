@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../../../../../assets/logo.png';
-import MasterLogo from '../../../../../assets/master.png';
+import MetalPhoto from '../../../../../assets/metal.png';
 import { useModal } from '../../../../ModalContext';
 import CardLayout from '../CardLayout';
 import CardFundingForm from '../../Forms/CardFundingForm';
@@ -51,25 +51,30 @@ const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, 
             data-card-id={cardId} // Add data attribute for easy DOM inspection
         >
             {/* Watermark Image */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-20">
+            {/* <div className="absolute inset-0 flex items-center justify-center opacity-20">
                 <img
                     src={Logo}
                     alt="Smart Logo"
                     className="w-full h-full object-contain"
                 />
-            </div>
+            </div> */}
 
             {/* Card Content */}
             <div className="relative z-10 flex flex-col gap-1 h-full">
-                <div className='mb-5 flex justify-between items-center'>
+                <div className='flex justify-between items-center'>
                     <h1 className='text-white text-xl font-light'>Smart <span className='font-bold'>Card</span></h1>
-                    <div className='w-[45px] h-[45px] flex justify-center items-center bg-white rounded-full'>
+                    <div className='w-[45px] h-[45px] flex justify-center items-center bg-white/20 rounded-full'>
                         <img src={Logo} alt="Smart Logo" className="w-8 h-8" />
                     </div>
                 </div>
 
-                <h2 className='text-white'>{name || 'Abubakar Sadiq Muhammad'}</h2>
-                <p className='text-white text-lg'>{cardNumber || '1234 **** **** **** 3456'}</p>
+                <div className='flex items-center justify-between my-5'>
+                    <div>
+                        <h2 className='text-white text-lg'>{name || 'Card Holder Name'}</h2>
+                        <p className='text-white text-lg'>{cardNumber || '1234 **** **** **** 3456'}</p>
+                    </div>
+                    <img src={MetalPhoto} className='w-[65px]' alt="Chip Contact Plate" />
+                </div>
 
                 <div className='mt-auto flex justify-between items-center'>
                     <button

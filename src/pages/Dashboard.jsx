@@ -134,7 +134,7 @@ const Dashboard = () => {
 
                         <Route path='pay-tv-bill/tv-bill-table' element={<TvBillTable />} />
 
-                        <Route path='virtual-card/card-details/:cardId' element={<CardDetails />} />
+                        <Route path='virtual-card/card-details/:cardId/:currency' element={<CardDetails />} />
 
                         {/* Settings routes */}
                         <Route path='settings/profile' element={<ProfileSection />} />

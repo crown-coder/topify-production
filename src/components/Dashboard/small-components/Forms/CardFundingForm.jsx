@@ -9,7 +9,13 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
     const [message, setMessage] = useState({ text: '', isSuccess: false });
     const [walletBalance, setWalletBalance] = useState(0);
     const [exchangeRate, setExchangeRate] = useState(1693);
-    const MINIMUM_AMOUNT = 1000;
+    let MINIMUM_AMOUNT = 1000;
+
+    if (currency === 'USD') {
+        MINIMUM_AMOUNT = 1; // Minimum funding amount in USD
+    } else if (currency === 'NGN') {
+        MINIMUM_AMOUNT = 1000; // Minimum funding amount in NGN
+    }
 
     const formatBalance = useCallback((balance) => {
         return new Intl.NumberFormat('en-NG', {
@@ -33,8 +39,8 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
             };
 
             const [walletResponse, rateResponse] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, config),
-                axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`)
+                axios.get(`/api/api2/user`, config),
+                axios.post(`/api/getExchangeRates`)
             ]);
 
             setWalletBalance(walletResponse.data);
@@ -60,7 +66,7 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
         }
 
         const currentBalance = parseFloat(walletBalance?.wallet?.balance || 0);
-        
+
         if (amountValue > currentBalance) {
             setMessage({ text: 'Insufficient wallet balance', isSuccess: false });
             return;
@@ -88,7 +94,7 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
             };
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/fund`,
+                `/api/virtual-cards/fund`,
                 requestBody,
                 config
             );
@@ -131,6 +137,21 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
         }
     };
 
+    let fundingAmount = 0;
+
+    if (currency === 'USD') {
+        fundingAmount = amount
+            ? new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                .format(parseFloat(amount) * exchangeRate)
+            : '0.00';
+    } else if (currency === 'NGN') {
+        fundingAmount = amount
+            ? new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                .format(parseFloat(amount) / exchangeRate)
+            : '0.00';
+    }
+
+
     const usdAmount = amount ? (parseFloat(amount) / exchangeRate).toFixed(2) : '0.00';
 
     return (
@@ -146,7 +167,7 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
                 </div>
                 <div className="mt-2 text-xs text-gray-500 flex items-center">
                     <FiInfo className="mr-1" />
-                    Minimum funding amount: ₦{MINIMUM_AMOUNT.toLocaleString()}
+                    Minimum funding amount: {currency === 'NGN' ? '₦' : '$'}{MINIMUM_AMOUNT.toLocaleString()}
                 </div>
             </div>
 
@@ -164,11 +185,11 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
             <form onSubmit={handleSubmit}>
                 <div className="mb-6">
                     <label htmlFor="amount" className="block text-gray-700 text-sm font-medium mb-2">
-                        Amount to Fund (₦)
+                        Amount to Fund ({currency === 'NGN' ? '₦' : '$'})
                     </label>
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500">₦</span>
+                            <span className="text-gray-500">{currency === 'NGN' ? '₦' : '$'}</span>
                         </div>
                         <input
                             type="text"
@@ -201,10 +222,10 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
                         </div>
                         <div className="flex justify-between items-center p-3 bg-gray-100 rounded">
                             <div className="text-sm font-medium text-gray-700">
-                                <span>You'll receive</span>
+                                <span>Amount in {currency === 'NGN' ? '$' : '₦'}</span>
                             </div>
                             <span className="text-sm font-bold">
-                                ${usdAmount}
+                                {currency === 'NGN' ? '$' : '₦'}{fundingAmount}
                             </span>
                         </div>
                     </div>

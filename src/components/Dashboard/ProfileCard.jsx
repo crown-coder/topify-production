@@ -11,7 +11,7 @@ const ProfileCard = ({ isVisible, onToggleDarkMode }) => {
 
     const handleLogout = async () => {
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/logout`, {}, {
+            await axios.post(`/api/logout`, {}, {
                 headers: {
                     "Content-Type": "application/json",
                 },

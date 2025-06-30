@@ -11,6 +11,7 @@ const CardSelectionModal = ({ cards, onSelect, onClose }) => {
         setIsLoading(true);
         try {
             await onSelect(selectedCard);
+            onClose();
         } finally {
             setIsLoading(false);
         }
@@ -21,7 +22,7 @@ const CardSelectionModal = ({ cards, onSelect, onClose }) => {
             <h2 className="text-xl font-semibold mb-4">Select Card Type</h2>
             <p className="text-gray-600 mb-6">Choose the type of virtual card you want to create</p>
 
-            <div className="space-y-3">
+            <div className="space-y-3 h-[270px] overflow-y-scroll">
                 {cards.filter(card => card.status === 'active').map(card => (
                     <div
                         key={card.id}
@@ -34,10 +35,11 @@ const CardSelectionModal = ({ cards, onSelect, onClose }) => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="font-medium">{card.name}</h3>
-                                <p className="text-sm text-gray-500">
-                                    {card.currency} • {card.limit} Limit
-                                    {card.fee !== "0.00" && ` • Fee: ${card.fee}`}
-                                </p>
+                                <div className='flex justify-between w-full gap-2'>
+                                    <p className='text-sm'>Currency: {card.currency}</p>
+                                    <p className='text-sm'>Limit: {card.limit}</p>
+                                    <p className='text-sm'>Creation Fee: {card.fee}</p>
+                                </div>
                             </div>
                             {selectedCard?.id === card.id && (
                                 <CheckCircleIcon className="h-5 w-5 text-blue-500" />

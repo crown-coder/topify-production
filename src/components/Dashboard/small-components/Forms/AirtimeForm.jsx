@@ -38,7 +38,7 @@ const AirtimeForm = ({ onSubmit, selectedPlan = {}, provider, closeModal }) => {
         const fetchWalletBalance = async () => {
             try {
                 const response = await axios.get(
-                    `${import.meta.env.VITE_API_URL}/api2/user`,
+                    `/api/api2/user`,
                     {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -106,7 +106,7 @@ const AirtimeForm = ({ onSubmit, selectedPlan = {}, provider, closeModal }) => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/buy_airtime`,
+                `/api/buy_airtime`,
                 {
                     phone_number: formattedPhoneNumber,
                     mobile_network: networkId,
