@@ -80,7 +80,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
     const fetchAvailableCards = async () => {
         try {
-            const response = await axios.post('/api/getCardType', {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -103,7 +103,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
     const fetchFieldRequirements = async (cardId) => {
         setIsLoadingFields(true);
         try {
-            const response = await axios.get(`/api/card-types/${cardId}/fields`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/card-types/${cardId}/fields`, {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -334,7 +334,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             }
 
             const response = await axios.post(
-                `/api/virtual-cards/create-holder`,
+                `${import.meta.env.VITE_API_URL}/virtual-cards/create-holder`,
                 formDataToSend,
                 {
                     headers: {

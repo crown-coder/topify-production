@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -28,7 +28,7 @@ const Balance = () => {
 
   const handleVerifyClick = async () => {
     try {
-      const response = await axios.post(`/api/email/verification-notification`,
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/email/verification-notification`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ const Balance = () => {
   const fetchUserData = async () => {
     setLoading(true)
     try {
-      const response = await axios.get(`/api/api2/user`,
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`,
         {
           headers: {
             'Content-Type': 'application/json',

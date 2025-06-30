@@ -29,7 +29,7 @@ const TvSubForm = ({ onSubmit, provider, selectedPlan }) => {
     useEffect(() => {
         const fetchWalletBalance = async () => {
             try {
-                const response = await axios.get(`/api/api2/user`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`);
                 const balance = parseFloat(response.data?.wallet?.balance || 0);
                 setWalletBalance(balance);
             } catch (err) {
@@ -61,7 +61,7 @@ const TvSubForm = ({ onSubmit, provider, selectedPlan }) => {
         }
 
         const cableName = provider.toUpperCase();
-        const url = `/api/validate_icu?smart_card_number=${cardNumber}&cable_name=${cableName}`;
+        const url = `${import.meta.env.VITE_API_URL}/validate_icu?smart_card_number=${cardNumber}&cable_name=${cableName}`;
 
         try {
             setIsValidating(true);

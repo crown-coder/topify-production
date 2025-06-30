@@ -87,7 +87,7 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
 
         const fetchFieldRequirements = async () => {
             try {
-                const response = await axios.get(`/api/card-types/${cardTypeId}/fields`, {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/card-types/${cardTypeId}/fields`, {
                     headers: {
                         'X-XSRF-TOKEN': xsrfToken,
                     },
@@ -374,7 +374,7 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
             console.time("⏱️ API Call Duration");
 
             const response = await axios.post(
-                `/api/virtual-cards/create-holder`,
+                `${import.meta.env.VITE_API_URL}/virtual-cards/create-holder`,
                 formDataToSend,
                 {
                     headers: {

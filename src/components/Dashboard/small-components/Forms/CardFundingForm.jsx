@@ -39,8 +39,8 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
             };
 
             const [walletResponse, rateResponse] = await Promise.all([
-                axios.get(`/api/api2/user`, config),
-                axios.post(`/api/getExchangeRates`)
+                axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, config),
+                axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`)
             ]);
 
             setWalletBalance(walletResponse.data);
@@ -94,7 +94,7 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
             };
 
             const response = await axios.post(
-                `/api/virtual-cards/fund`,
+                `${import.meta.env.VITE_API_URL}/virtual-cards/fund`,
                 requestBody,
                 config
             );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import GridLayout from "./small-components/GridLayout";
 import NineMobile from "../../assets/9mobile.png";
 import Airtel from "../../assets/Airtel.png";

@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import Form from './small-components/Form'
 import { motion } from "framer-motion";

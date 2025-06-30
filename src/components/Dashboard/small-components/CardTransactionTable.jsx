@@ -19,7 +19,7 @@ const CardTransactionTable = ({ cardId, cardCurrency }) => {
                 const xsrfToken = Cookies.get('XSRF-TOKEN');
 
                 const response = await axios.get(
-                    `/api/virtual-cards/transactions/${cardId}?page=1&currency=${cardCurrency}`,
+                    `${import.meta.env.VITE_API_URL}/virtual-cards/transactions/${cardId}?page=1&currency=${cardCurrency}`,
                     {
                         headers: {
                             'Content-Type': 'application/json',

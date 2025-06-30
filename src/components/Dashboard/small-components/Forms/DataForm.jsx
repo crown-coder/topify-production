@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Glo from '../../../../assets/glo.png';
-import Airtel from '../../../../assets/airtel.png';
 import { useModal } from '../../../ModalContext';
 import { MdCancel } from "react-icons/md";
 import { TailSpin } from 'react-loader-spinner';
@@ -33,7 +31,7 @@ const DataForm = ({ selectedPlan = {}, activeNetwork }) => {
   useEffect(() => {
     const fetchWalletBalance = async () => {
       try {
-        const response = await axios.get(`/api/api2/user`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -96,7 +94,7 @@ const DataForm = ({ selectedPlan = {}, activeNetwork }) => {
 
     try {
       const response = await axios.post(
-        `/api/buy_data`,
+        `${import.meta.env.VITE_API_URL}/buy_data`,
         {
           phone_number: formattedPhoneNumber,
           mobile_network: networkId,

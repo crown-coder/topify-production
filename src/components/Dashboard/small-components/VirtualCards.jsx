@@ -36,7 +36,7 @@ const VirtualCards = () => {
                 withCredentials: true
             };
 
-            const response = await axios.get(`/api/api2/user`, config);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, config);
             setUserData(response.data);
             return response.data;
         } catch (err) {
@@ -48,7 +48,7 @@ const VirtualCards = () => {
     const fetchAvailableCardTypes = async () => {
         try {
             const xsrfToken = Cookies.get('XSRF-TOKEN');
-            const response = await axios.post(`/api/getCardType`, {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -99,7 +99,7 @@ const VirtualCards = () => {
                 withCredentials: true
             };
 
-            const idResponse = await axios.get(`/api/Allvirtual-cards?provider=${provider}`, config);
+            const idResponse = await axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards?provider=${provider}`, config);
             const cardList = idResponse.data?.data || [];
 
             // console.log('Fetched cards:', cardList.Array.isArray(cardList) ? cardList.length : 0);
@@ -110,7 +110,7 @@ const VirtualCards = () => {
             }
 
             const detailPromises = cardList.map(card =>
-                axios.get(`/api/virtual-cards/${card.id}/details`, config)
+                axios.get(`${import.meta.env.VITE_API_URL}/virtual-cards/${card.id}/details`, config)
             );
 
             const detailResponses = await Promise.all(detailPromises);

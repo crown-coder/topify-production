@@ -41,8 +41,8 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                 };
 
                 const [cardsResponse, rateResponse] = await Promise.all([
-                    axios.get(`/api/Allvirtual-cards`, config),
-                    axios.post(`/api/getExchangeRates`)
+                    axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards`, config),
+                    axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`)
                 ]);
 
                 const matchingCard = cardsResponse.data.data.find(card => card.id === currentCardId);
@@ -81,7 +81,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                     withCredentials: true
                 };
 
-                const response = await axios.get(`/api/bank-accounts`, config);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/bank-accounts`, config);
                 if (response.data?.data?.length > 0) {
                     setUserBanks(response.data.data);
                     setSelectedBank(response.data.data[0].id); // Select first bank by default
@@ -207,7 +207,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
             }
 
             const response = await axios.post(
-                `/api/virtual-cards/payout`,
+                `${import.meta.env.VITE_API_URL}/virtual-cards/payout`,
                 payload,
                 config
             );

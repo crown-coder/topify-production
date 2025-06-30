@@ -40,7 +40,7 @@ const VirtualCard = () => {
     const fetchUserData = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get(`/api/api2/user`);
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`);
             const userData = {
                 ...response.data,
                 kyc_verified: true // Assuming KYC is verified for this example
@@ -82,7 +82,7 @@ const VirtualCard = () => {
         setIsSendingOtp(true);
         otpSentRef.current = true;
         try {
-            await axios.post(`/api/send-otp`, { email: user.email });
+            await axios.post(`${import.meta.env.VITE_API_URL}/send-otp`, { email: user.email });
             setShowOtpModal(true);
             openModal(
                 <OtpModal
@@ -165,7 +165,7 @@ const VirtualCard = () => {
         if (!otp_code || !otpVerified) return;
 
         try {
-            await axios.post('/api/extend-otp', { otp: otp_code }, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/extend-otp`, { otp: otp_code }, {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-XSRF-TOKEN': xsrfToken,

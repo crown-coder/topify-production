@@ -1,16 +1,20 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
       '/api': {
-        target: 'https://sandbox.topify.ng',
+        target: 'https://app.topify.ng',
         changeOrigin: true,
-        secure: false, // if the API uses self-signed certs, keep this
+        secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
       }
     }
+  },
+
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify('https://app.topify.ng')
   }
-})
+});

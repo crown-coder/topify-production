@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import TvCard from './Cards/TvCard'
 const Startimes = ({ onClick }) => {
@@ -9,7 +9,7 @@ const Startimes = ({ onClick }) => {
     useEffect(() => {
         const fetchStartimesPlans = async () => {
             try {
-                const response = await axios.get('/api/cable-networks?withPlans=true')
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/cable-networks?withPlans=true`)
                 const startimesData = response.data.find(network => network.name === "STARTIME")
 
                 if (startimesData && startimesData.plans) {

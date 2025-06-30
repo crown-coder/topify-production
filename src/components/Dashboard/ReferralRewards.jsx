@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { motion } from "framer-motion";
 import RefferalTable from './small-components/RefferalTable';
@@ -10,7 +10,7 @@ const ReferralRewards = () => {
 
     const fetchReferralData = async () => {
         try {
-            const response = await axios.get(`/api/referrals`)
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/referrals`)
             const data = response.data
             setTotalReferral(data.length)
 

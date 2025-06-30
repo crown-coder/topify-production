@@ -49,7 +49,7 @@ const CardDetails = () => {
                 withCredentials: true
             };
 
-            const allCardsResponse = await axios.get(`/api/Allvirtual-cards`, config);
+            const allCardsResponse = await axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards`, config);
             const allCards = allCardsResponse.data.data;
 
             const matchingCard = allCards.find(card => card.card_id === cardId);
@@ -61,7 +61,7 @@ const CardDetails = () => {
 
             setCurrentCardId(matchingCard.id);
 
-            const cardDetailsResponse = await axios.get(`/api/virtual-cards/${matchingCard.id}/details`, config);
+            const cardDetailsResponse = await axios.get(`${import.meta.env.VITE_API_URL}/virtual-cards/${matchingCard.id}/details`, config);
             const cardDetails = cardDetailsResponse.data;
 
             const updatedCard = {
@@ -140,7 +140,7 @@ const CardDetails = () => {
             const newStatus = card.is_active ? 1 : 0;
 
             const response = await axios.post(
-                '/api/virtual-cards/toggle-freeze',
+                `${import.meta.env.VITE_API_URL}/virtual-cards/toggle-freeze`,
                 {
                     is_active: newStatus,
                     card_id: card.card_id,

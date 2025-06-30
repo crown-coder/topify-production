@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -19,7 +19,7 @@ const Welcome = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await axios.get(`/api/api2/user`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`);
                 setUser(response.data);
             } catch (err) {
                 console.error('Error fetching user data:', err);

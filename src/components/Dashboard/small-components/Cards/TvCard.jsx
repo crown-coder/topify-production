@@ -1,5 +1,3 @@
-import React from 'react'
-
 const TvCard = ({ className, title, amount, duration, txt, onClick }) => {
     return (
         <div onClick={onClick} className={`${className} text-center text-white rounded-md px-2 py-4 cursor-pointer`}>

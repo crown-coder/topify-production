@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import AccountCard from './AccountCard';
 import { useModal } from '../../ModalContext';
@@ -41,7 +41,7 @@ const Accounts = () => {
     useEffect(() => {
         const fetchUserAccounts = async () => {
             try {
-                const response = await axios.get(`/api/api2/user`, {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }

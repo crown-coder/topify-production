@@ -1,4 +1,3 @@
-import React from "react";
 import TransactionHeader from "./small-components/TransactionHeader";
 import TransactionTable from "./small-components/TransactionTable";
 import { motion } from "framer-motion";

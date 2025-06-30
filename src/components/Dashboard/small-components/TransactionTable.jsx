@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +10,7 @@ const TransactionTable = () => {
     useEffect(() => {
         const fetchTransactions = async () => {
             try {
-                const response = await axios.get(`/api/transactions?search=&page=1&pageSize=10`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/transactions?search=&page=1&pageSize=10`);
                 setTransactions(response.data);
             } catch (error) {
                 console.error('Error fetching transactions:', error);

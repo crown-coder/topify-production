@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Route, Routes } from "react-router-dom"
 import Sidebar from "../components/Dashboard/Sidebar"
 import Profile from "../components/Dashboard/Profile"
-import ModelLayout from '../components/Dashboard/small-components/ModelLayout.jsx'
 import { useModal } from '../components/ModalContext.jsx'
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
@@ -61,7 +60,7 @@ const Dashboard = () => {
 
     const handleLogout = async () => {
         try {
-            await axios.post("/api/logout", {}, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/logout`, {}, {
                 headers: {
                     "Content-Type": "application/json",
                 },

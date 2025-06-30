@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Glo from '../../../../assets/glo.png';
 import Airtel from '../../../../assets/airtel.png';
@@ -38,7 +38,7 @@ const AirtimeForm = ({ onSubmit, selectedPlan = {}, provider, closeModal }) => {
         const fetchWalletBalance = async () => {
             try {
                 const response = await axios.get(
-                    `/api/api2/user`,
+                    `${import.meta.env.VITE_API_URL}/api2/user`,
                     {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -106,7 +106,7 @@ const AirtimeForm = ({ onSubmit, selectedPlan = {}, provider, closeModal }) => {
 
         try {
             const response = await axios.post(
-                `/api/buy_airtime`,
+                `${import.meta.env.VITE_API_URL}/buy_airtime`,
                 {
                     phone_number: formattedPhoneNumber,
                     mobile_network: networkId,
