@@ -1,14 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import AirSubCard from "./Cards/SubCard";
-
 import { useModal } from "../../ModalContext";
 
-const Card = ({ value, bgColor, scatter, scatterVariants, onClick, isActive, handleBuyAiretime }) => {
+const Card = ({ value, bgColor, scatter, scatterVariants, onClick, isActive, activeCardStyle }) => {
     return (
         <motion.div
-            className={`cursor-pointer text-center font-bold p-11 rounded-lg ${bgColor} ${isActive ? "activeCard" : ""
-                } flex items-center justify-center`}
+            className={`cursor-pointer text-center font-bold p-11 rounded-lg ${bgColor} ${isActive ? activeCardStyle : ""} flex items-center justify-center`}
             variants={scatterVariants}
             initial={scatter ? "hidden" : "visible"}
             animate={scatter ? "hidden" : "visible"}
@@ -20,27 +18,29 @@ const Card = ({ value, bgColor, scatter, scatterVariants, onClick, isActive, han
     );
 };
 
-const GridLayout = ({ className, scatter }) => {
-    const [selectedValue, setSelectedValue] = useState(""); // Track selected card value
-    const [activeCard, setActiveCard] = useState(null); // Track the active card
-
-    const { openModal } = useModal();
+const GridLayout = ({ className, scatter, activeNetwork, activeCardStyle }) => {
+    const [selectedValue, setSelectedValue] = useState("");
+    const [activeCard, setActiveCard] = useState(null);
+    const { openModal, closeModal } = useModal();
 
     const handleBuyAirtime = (e) => {
         e.preventDefault();
+        if (!selectedValue) return;
 
-        openModal(
-            <AirSubCard />
-        )
-    }
+        const plan = {
+            amount: selectedValue,
+            provider: activeNetwork
+        };
 
-    // Scatter animation variants
+        openModal(<AirSubCard plan={plan} provider={activeNetwork} closeModal={closeModal} />);
+    };
+
     const scatterVariants = {
         hidden: {
             opacity: 0,
             scale: 0,
-            x: Math.random() * 400 - 200, // Random scatter x-axis
-            y: Math.random() * 400 - 200, // Random scatter y-axis
+            x: Math.random() * 400 - 200,
+            y: Math.random() * 400 - 200,
         },
         visible: {
             opacity: 1,
@@ -50,18 +50,16 @@ const GridLayout = ({ className, scatter }) => {
         },
     };
 
-    // Handle card click
     const handleCardClick = (value, index) => {
-        const numericValue = parseInt(value.replace("N", ""), 10); // Convert to number
+        const numericValue = value.replace("N", "");
         setSelectedValue(numericValue);
-        setActiveCard(index); // Set the active card index
+        setActiveCard(index);
     };
 
-    // Handle input change
     const handleInputChange = (e) => {
-        const value = e.target.value.replace(/\D/g, ""); // Allow only numeric input
+        const value = e.target.value.replace(/\D/g, "");
         setSelectedValue(value);
-        setActiveCard(null); // Remove active card if input is manually changed
+        setActiveCard(null);
     };
 
     return (
@@ -75,6 +73,7 @@ const GridLayout = ({ className, scatter }) => {
                     scatterVariants={scatterVariants}
                     onClick={() => handleCardClick("N500", 0)}
                     isActive={activeCard === 0}
+                    activeCardStyle={activeCardStyle}
                 />
                 <Card
                     value="N400"
@@ -83,6 +82,7 @@ const GridLayout = ({ className, scatter }) => {
                     scatterVariants={scatterVariants}
                     onClick={() => handleCardClick("N400", 1)}
                     isActive={activeCard === 1}
+                    activeCardStyle={activeCardStyle}
                 />
                 <div></div>
                 <Card
@@ -92,6 +92,7 @@ const GridLayout = ({ className, scatter }) => {
                     scatterVariants={scatterVariants}
                     onClick={() => handleCardClick("N100", 2)}
                     isActive={activeCard === 2}
+                    activeCardStyle={activeCardStyle}
                 />
                 <Card
                     value="N1000"
@@ -100,6 +101,7 @@ const GridLayout = ({ className, scatter }) => {
                     scatterVariants={scatterVariants}
                     onClick={() => handleCardClick("N1000", 3)}
                     isActive={activeCard === 3}
+                    activeCardStyle={activeCardStyle}
                 />
                 <Card
                     value="N300"
@@ -108,6 +110,7 @@ const GridLayout = ({ className, scatter }) => {
                     scatterVariants={scatterVariants}
                     onClick={() => handleCardClick("N300", 4)}
                     isActive={activeCard === 4}
+                    activeCardStyle={activeCardStyle}
                 />
                 <div></div>
                 <div></div>
@@ -118,20 +121,24 @@ const GridLayout = ({ className, scatter }) => {
                     scatterVariants={scatterVariants}
                     onClick={() => handleCardClick("N200", 5)}
                     isActive={activeCard === 5}
+                    activeCardStyle={activeCardStyle}
                 />
                 <div></div>
             </div>
             <div className="w-[50%] max-lg:w-[90%]">
-                <form>
+                <form onSubmit={handleBuyAirtime}>
                     <input
                         type="text"
                         placeholder="Enter amount"
                         className="p-3 border rounded-lg w-full"
-                        value={selectedValue} // Allow value to be typed or selected
-                        onChange={handleInputChange} // Handle manual input
+                        value={selectedValue ? `N${selectedValue}` : ""}
+                        onChange={handleInputChange}
                         required
                     />
-                    <button className="w-full my-4 py-4 text-white font-semibold text-lg rounded-lg bg-[#4CACF0]" type="submit" onClick={handleBuyAirtime}>
+                    <button
+                        className="w-full my-4 py-4 text-white font-semibold text-lg rounded-lg bg-[#4CACF0]"
+                        type="submit"
+                    >
                         Proceed
                     </button>
                 </form>

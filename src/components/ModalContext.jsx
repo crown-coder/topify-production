@@ -32,7 +32,12 @@ export const ModalProvider = ({ children }) => {
 
     return (
         <ModalContext.Provider value={{ isModalOpen, modalContent, openModal, closeModal }}>
-            {children}
+            <div
+                className="relative animate-scaleIn"
+                onClick={e => e.stopPropagation()}
+            >
+                {children}
+            </div>
         </ModalContext.Provider>
     );
 };

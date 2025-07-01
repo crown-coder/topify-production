@@ -1,9 +1,30 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { useModal } from '../../ModalContext'
+import LoadingCard from './Cards/LoadingCard';
+import Confirmation from './Cards/Confirmation';
+import CardLayout from './Cards/CardLayout'
 
 const AirtimeToCashForm = () => {
+    const { openModal, closeModal } = useModal();
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        setTimeout(() => {
+            setIsLoading(false);
+            openModal(
+                <CardLayout closeModal={closeModal}>
+                    <Confirmation />
+                </CardLayout>
+            )
+        }, 3000);
+    }
+
     return (
         <div>
-            <form>
+            <form onSubmit={handleSubmit}>
                 <div>
                     <div className='grid grid-cols-2 max-lg:grid-cols-1 gap-5'>
                         <div className='flex flex-col gap-2'>

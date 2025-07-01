@@ -1,4 +1,4 @@
-export { default as AirtimePlans } from './AirtimePlans'
+export { default as DataType } from './DataType'
 export { default as Analytics } from './Analytics'
 export { default as Configuration } from './Configuration'
 export { default as DataPlans } from './DataPlans'

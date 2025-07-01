@@ -9,7 +9,7 @@ import { AiOutlineThunderbolt } from "react-icons/ai";
 import { LuSquarePlay } from "react-icons/lu";
 import { LuGraduationCap } from "react-icons/lu";
 import { LiaAwardSolid } from "react-icons/lia";
-// import { CiCreditCard2 } from "react-icons/ci";
+import { CiCreditCard2 } from "react-icons/ci";
 import { CiSettings } from "react-icons/ci";
 import { CiLogout } from "react-icons/ci";
 
@@ -132,12 +132,12 @@ export const NAVIGATION_ITEMS = [
         route: "referral-rewards",
         title: "referral-rewards",
       },
-      // {
-      //   name: "Virtual Card",
-      //   icon: CiCreditCard2,
-      //   route: "virtual-card",
-      //   title: "virtual-card",
-      // },
+      {
+        name: "Virtual Card",
+        icon: CiCreditCard2,
+        route: "virtual-card",
+        title: "virtual-card",
+      },
     ],
   },
   {
@@ -204,10 +204,10 @@ export const ADMIN_NAVIGATION_ITEMS = [
         title: "data-plans",
       },
       {
-        name: "Airtime Plans",
+        name: "Data Type",
         icon: CiGlobe,
-        route: "airtime-plans",
-        title: "airtime-plans",
+        route: "data-type",
+        title: "data-type",
       },
       {
         name: "TV plans",
@@ -250,7 +250,7 @@ export const ADMIN_NAVIGATION_ITEMS = [
         route: "referral-promo",
         title: "referral-promo",
       },
-      
+
     ],
   },
   {
@@ -278,6 +278,7 @@ export const transactionData = [
     transactionId: "#2255DDC35",
     amount: "₦250",
     description: "Airtime purchase",
+    phoneNumber: "07025654751",
     status: 1,
     apiResponse: "201 Created"
   },
@@ -286,6 +287,7 @@ export const transactionData = [
     transactionId: "#2255DEC02",
     amount: "₦450",
     description: "Data purchase",
+    phoneNumber: "07025654751",
     status: 2,
     apiResponse: "400 Bad Request"
   },
@@ -294,6 +296,7 @@ export const transactionData = [
     transactionId: "#2255EEA89",
     amount: "₦1,250",
     description: "Electricity Bill payment",
+    phoneNumber: "07025654751",
     status: 3,
     apiResponse: "200 OK"
   },
@@ -302,6 +305,7 @@ export const transactionData = [
     transactionId: "#2255EEA89",
     amount: "₦1,250",
     description: "Electricity Bill payment",
+    phoneNumber: "07025654751",
     status: 2,
     apiResponse: "200 OK"
   },
@@ -310,6 +314,7 @@ export const transactionData = [
     transactionId: "#2255EEA89",
     amount: "₦1,250",
     description: "Electricity Bill payment",
+    phoneNumber: "07025654751",
     status: 2,
     apiResponse: "400 Bad Request"
   },
@@ -318,6 +323,7 @@ export const transactionData = [
     transactionId: "#2255EEA89",
     amount: "₦1,250",
     description: "Electricity Bill payment",
+    phoneNumber: "07025654751",
     status: 1,
     apiResponse: "400 Bad Request"
   },
@@ -326,6 +332,7 @@ export const transactionData = [
     transactionId: "#2255EEA89",
     amount: "₦1,250",
     description: "Electricity Bill payment",
+    phoneNumber: "07025654751",
     status: 3,
     apiResponse: "200 OK"
   },
@@ -334,6 +341,7 @@ export const transactionData = [
     transactionId: "#2255EEA89",
     amount: "₦1,250",
     description: "Electricity Bill payment",
+    phoneNumber: "07025654751",
     status: 2,
     apiResponse: "200 OK"
   }

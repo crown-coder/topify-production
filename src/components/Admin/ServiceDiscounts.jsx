@@ -1,9 +1,9 @@
 import React from 'react'
-
+import Discount from './small-components/Discount'
 const ServiceDiscounts = () => {
     return (
         <div>
-            ServiceDiscounts
+            <Discount />
         </div>
     )
 }

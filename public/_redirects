@@ -1,0 +1,2 @@
+/api/*    https://app.topify.ng/:splat    200
+/*        /index.html                     200
