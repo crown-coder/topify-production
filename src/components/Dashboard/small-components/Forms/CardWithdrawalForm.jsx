@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FiInfo, FiDollarSign, FiAlertCircle, FiCreditCard, FiCheckCircle } from 'react-icons/fi';
 import { BsBank2 } from "react-icons/bs";
 import axios from 'axios';
@@ -6,50 +6,63 @@ import Cookies from 'js-cookie';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 
-const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, closeModal }) => {
+const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, closeModal, cardProvider }) => {
     const navigate = useNavigate();
     const [amount, setAmount] = useState('');
     const [withdrawalType, setWithdrawalType] = useState('wallet');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState({ text: '', isSuccess: false });
     const [cardBalance, setCardBalance] = useState(0);
-    const [exchangeRate, setExchangeRate] = useState(1693);
+    const [exchangeRate, setExchangeRate] = useState(1550);
     const [userBanks, setUserBanks] = useState([]);
     const [selectedBank, setSelectedBank] = useState('');
     const [isLoadingBanks, setIsLoadingBanks] = useState(false);
-    let MINIMUM_AMOUNT = 500;
+    let MINIMUM_AMOUNT = cardCurrency === 'USD' ? 1 : 1000;
 
-    if (cardCurrency === 'USD') {
-        MINIMUM_AMOUNT = 1; // Minimum funding amount in USD
-    } else if (cardCurrency === 'NGN') {
-        MINIMUM_AMOUNT = 1000; // Minimum funding amount in NGN
+    const fetchExchangeRate = useCallback(async () => {
+        try {
+            const response = await axios.post('/api/getExchangeRates');
+            if (response.data.status === 'success') {
+                const providerRates = response.data[cardProvider.toLowerCase()];
+                if (providerRates) {
+                    setExchangeRate(providerRates.buy_rate);
+                    console.log("we sell value ", providerRates.buy_rate)
+                } else {
+                    setExchangeRate(response.data.graph.buy_rate);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching exchange rates:', err);
+            setExchangeRate(1550);
+        }
+    }, [cardProvider]);
 
-    }
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
                 const xsrfToken = Cookies.get('XSRF-TOKEN');
-                if (!xsrfToken) {
-                    throw new Error('Authentication token missing');
-                }
+                if (!xsrfToken) throw new Error('Authentication token missing');
 
                 const config = {
-                    headers: {
-                        'X-XSRF-TOKEN': xsrfToken,
-                    },
+                    headers: { 'X-XSRF-TOKEN': xsrfToken },
                     withCredentials: true
                 };
 
+<<<<<<< HEAD
                 const [cardsResponse, rateResponse] = await Promise.all([
                     axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards`, config),
                     axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`)
+=======
+                const [cardsResponse] = await Promise.all([
+                    axios.get(`/api/Allvirtual-cards`, config),
+                    fetchExchangeRate()
+>>>>>>> Complete Beta Version 1
                 ]);
 
                 const matchingCard = cardsResponse.data.data.find(card => card.id === currentCardId);
                 if (!matchingCard) throw new Error('Card not found');
 
                 setCardBalance(matchingCard.balance);
-                setExchangeRate(rateResponse.data?.data?.NGN ?? 1693);
             } catch (err) {
                 console.error('Error fetching initial data:', err);
                 setMessage({
@@ -59,14 +72,10 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
             }
         };
 
-        if (cardId) {
-            fetchInitialData();
-        } else {
-            setMessage({ text: 'Card not specified', isSuccess: false });
-        }
-    }, [cardId, cardCurrency, currentCardId]);
+        if (cardId) fetchInitialData();
+        else setMessage({ text: 'Card not specified', isSuccess: false });
+    }, [cardId, currentCardId, fetchExchangeRate]);
 
-    // Fetch user banks when withdrawal type changes to 'bank'
     useEffect(() => {
         const fetchUserBanks = async () => {
             if (withdrawalType !== 'bank') return;
@@ -84,7 +93,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                 const response = await axios.get(`${import.meta.env.VITE_API_URL}/bank-accounts`, config);
                 if (response.data?.data?.length > 0) {
                     setUserBanks(response.data.data);
-                    setSelectedBank(response.data.data[0].id); // Select first bank by default
+                    setSelectedBank(response.data.data[0].id);
                 } else {
                     setMessage({ text: 'No bank accounts found. Please add a bank account first.', isSuccess: false });
                 }
@@ -102,12 +111,9 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
         fetchUserBanks();
     }, [withdrawalType]);
 
-    // Auto-dismiss success messages after 5 seconds
     useEffect(() => {
         if (message.isSuccess) {
-            const timer = setTimeout(() => {
-                setMessage({ text: '', isSuccess: false });
-            }, 5000);
+            const timer = setTimeout(() => setMessage({ text: '', isSuccess: false }), 5000);
             return () => clearTimeout(timer);
         }
     }, [message.isSuccess]);
@@ -119,36 +125,25 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
         }
     };
 
-    const formatCurrency = (value, currency = 'NGN') => {
+    const formatCurrency = (value) => {
         const numericValue = parseFloat(value || 0);
         if (isNaN(numericValue)) return '0.00';
-
         return numericValue.toLocaleString('en-US', {
-            style: 'currency',
-            currency: currency,
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        }).replace(/^[^\d]*/, ''); // Remove currency symbol for custom formatting
+        });
     };
 
     const validateForm = () => {
         const amountValue = parseFloat(amount);
         if (isNaN(amountValue)) {
-            setMessage({
-                text: 'Please enter a valid amount',
-                isSuccess: false
-            });
+            setMessage({ text: 'Please enter a valid amount', isSuccess: false });
             return false;
         }
 
-        // Convert USD to NGN for validation if card is USD
-        const validationAmount = cardCurrency === "USD" ? amountValue * exchangeRate : amountValue;
-
-        if (validationAmount < MINIMUM_AMOUNT) {
+        if (amountValue < MINIMUM_AMOUNT) {
             setMessage({
-                text: `Minimum withdrawal amount is ${cardCurrency === "USD"
-                    ? `$${(MINIMUM_AMOUNT / exchangeRate).toFixed(2)} (₦${MINIMUM_AMOUNT.toLocaleString()})`
-                    : `₦${MINIMUM_AMOUNT.toLocaleString()}`}`,
+                text: `Minimum withdrawal amount is ${cardCurrency === 'NGN' ? '₦' : '$'}${MINIMUM_AMOUNT.toLocaleString()}`,
                 isSuccess: false
             });
             return false;
@@ -156,17 +151,14 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
 
         if (amountValue > cardBalance) {
             setMessage({
-                text: `Insufficient card balance (Available: ${cardCurrency === "USD" ? '$' : '₦'}${formatCurrency(cardBalance)})`,
+                text: `Insufficient card balance (Available: ${cardCurrency === 'NGN' ? '₦' : '$'}${formatCurrency(cardBalance)})`,
                 isSuccess: false
             });
             return false;
         }
 
         if (withdrawalType === 'bank' && !selectedBank) {
-            setMessage({
-                text: 'Please select a bank account',
-                isSuccess: false
-            });
+            setMessage({ text: 'Please select a bank account', isSuccess: false });
             return false;
         }
 
@@ -178,7 +170,6 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
         setMessage({ text: '', isSuccess: false });
 
         if (!validateForm()) return;
-
         setIsSubmitting(true);
 
         try {
@@ -190,63 +181,55 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                 withCredentials: true
             };
 
-            // For USD cards, we send the dollar amount
             const payload = {
                 type: withdrawalType,
                 amount: amount.toString(),
                 card_id: cardId,
-                currency: cardCurrency // Include currency in payload
+                currency: cardCurrency
             };
 
             if (withdrawalType === 'bank') {
                 const selectedBankDetails = userBanks.find(bank => bank.id === selectedBank);
                 if (!selectedBankDetails) throw new Error('Selected bank not found');
-
                 payload.bankCode = selectedBankDetails.bank_code;
                 payload.bankAccNo = selectedBankDetails.account_number;
             }
 
+<<<<<<< HEAD
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/virtual-cards/payout`,
                 payload,
                 config
             );
+=======
+            const response = await axios.post(`/api/virtual-cards/payout`, payload, config);
+            const isSuccess = response.data?.success || response.data?.status?.toLowerCase() === 'success';
+>>>>>>> Complete Beta Version 1
 
-            const isSuccess = response.data?.success ||
-                response.data?.status?.toLowerCase() === 'success' ||
-                response.status === 200;
+            if (!isSuccess) throw new Error(response.data?.message || 'Withdrawal failed');
 
-            if (!isSuccess) {
-                throw new Error(response.data?.message || 'Withdrawal failed');
-            }
-
-            const successMessage = response.data?.message || 'Withdrawal successful';
             const newBalance = cardBalance - parseFloat(amount);
-
             setCardBalance(newBalance);
-            setMessage({ text: successMessage, isSuccess: true });
+            setMessage({
+                text: response.data?.message || 'Withdrawal successful',
+                isSuccess: true
+            });
             setAmount('');
 
-            if (onSuccess) {
-                onSuccess({
-                    amount: parseFloat(amount),
-                    cardId,
-                    newBalance,
-                    currency: cardCurrency
-                });
-            }
+            if (onSuccess) onSuccess({
+                amount: parseFloat(amount),
+                cardId,
+                newBalance,
+                currency: cardCurrency
+            });
         } catch (err) {
             console.error('Error processing withdrawal:', err);
-            let errorMsg = err.response?.data?.message ||
-                err.message ||
-                'Failed to process withdrawal';
-
+            let errorMsg = err.response?.data?.message || err.message || 'Failed to process withdrawal';
             if (err.response?.data?.error?.includes('card not found')) {
                 errorMsg = 'Card not found. Please check the card details.';
             } else if (err.response?.data?.error?.includes('insufficient funds')) {
                 errorMsg = 'Insufficient funds for this transaction.';
             }
-
             setMessage({ text: errorMsg, isSuccess: false });
         } finally {
             setIsSubmitting(false);
@@ -255,11 +238,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
 
     const calculateNairaAmount = () => {
         if (!amount || isNaN(parseFloat(amount))) return '0.00';
-
-        return new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(parseFloat(amount) * exchangeRate);
+        return formatCurrency(parseFloat(amount) * exchangeRate);
     };
 
     const getSelectedBankDetails = () => {
@@ -288,7 +267,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
     const handleAddAccount = () => {
         navigate('/dashboard/settings');
         closeModal();
-    }
+    };
 
     return (
         <div className="max-w-md mx-auto">
@@ -301,14 +280,12 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                 </div>
                 <div className="mt-2 text-xs text-gray-500 flex items-center">
                     <FiInfo className="mr-1" />
-                    Minimum funding amount: {cardCurrency === 'NGN' ? '₦' : '$'}{MINIMUM_AMOUNT.toLocaleString()}
+                    Minimum withdrawal amount: {cardCurrency === 'NGN' ? '₦' : '$'}{MINIMUM_AMOUNT.toLocaleString()}
                 </div>
             </div>
 
             {message.text && (
-                <div className={`mb-4 p-3 ${message.isSuccess ?
-                    'bg-green-50 text-green-700' :
-                    'bg-red-50 text-red-700'} rounded-md flex items-start animate-fadeIn`}>
+                <div className={`mb-4 p-3 ${message.isSuccess ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} rounded-md flex items-start animate-fadeIn`}>
                     {message.isSuccess ? (
                         <FiCheckCircle className="mr-2 mt-0.5 flex-shrink-0 text-green-500" />
                     ) : (
@@ -342,16 +319,11 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                                 value={amount}
                                 onChange={handleAmountChange}
                                 className="block w-full pl-8 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                placeholder={cardCurrency === "NGN" ? "0.00" : "0.00"}
+                                placeholder="0.00"
                                 inputMode="decimal"
                                 required
                             />
                         </div>
-                        {/* {amount && !isNaN(parseFloat(amount)) && cardCurrency === "USD" && (
-                            <div className="mt-1 text-xs text-gray-500">
-                                ≈ ₦{calculateNairaAmount()}
-                            </div>
-                        )} */}
                     </div>
 
                     <div className="mb-6">
@@ -419,7 +391,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                             <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
                                 <div className="flex items-center text-sm text-gray-600">
                                     <FiDollarSign className="mr-2" />
-                                    <span>USD/NGN Rate</span>
+                                    <span>USD/NGN Rate (We Buy Rate)</span>
                                 </div>
                                 <span className="text-sm font-medium">₦{formatCurrency(exchangeRate)}</span>
                             </div>
@@ -435,17 +407,12 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                     )}
                 </div>
 
-
                 <button
                     type="submit"
-                    disabled={isSubmitting || !amount || isNaN(parseFloat(amount)) ||
-                        (cardCurrency === "NGN" && parseFloat(amount) < MINIMUM_AMOUNT) ||
-                        (cardCurrency === "USD" && (parseFloat(amount) * exchangeRate) < MINIMUM_AMOUNT) ||
+                    disabled={isSubmitting || !amount || parseFloat(amount) < MINIMUM_AMOUNT ||
                         (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))}
                     className={`w-full py-3 px-4 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors 
-                        ${isSubmitting || !amount || isNaN(parseFloat(amount)) ||
-                            (cardCurrency === "NGN" && parseFloat(amount) < MINIMUM_AMOUNT) ||
-                            (cardCurrency === "USD" && (parseFloat(amount) * exchangeRate) < MINIMUM_AMOUNT) ||
+                        ${isSubmitting || !amount || parseFloat(amount) < MINIMUM_AMOUNT ||
                             (withdrawalType === 'bank' && (!selectedBank || userBanks.length === 0))
                             ? 'bg-blue-400 cursor-not-allowed'
                             : 'bg-[#4CACF0] hover:bg-[#3A9BDE]'
@@ -476,7 +443,9 @@ CardWithdrawalForm.propTypes = {
     cardId: PropTypes.string.isRequired,
     currentCardId: PropTypes.string.isRequired,
     onSuccess: PropTypes.func,
-    cardCurrency: PropTypes.string.isRequired
+    cardCurrency: PropTypes.string.isRequired,
+    closeModal: PropTypes.func.isRequired,
+    cardProvider: PropTypes.string.isRequired
 };
 
 export default CardWithdrawalForm;

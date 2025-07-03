@@ -1,24 +1,16 @@
 // components/ProtectedRoute.js
-import { Navigate } from 'react-router-dom';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
+import Loader from './Dashboard/small-components/Loader'
 
-axios.defaults.withCredentials = true; // Ensure axios uses credentials by default
 const ProtectedRoute = ({ children }) => {
+    const { user } = useAuth({ middleware: 'auth' })
 
-    const logCheck = async () => {
-        await axios.get('https://app.topify.ng/sanctum/csrf-cookie');
+    if (user === null) {
+        return <Loader global="true" />
     }
 
-    logCheck()
+    return user ? children : <Navigate to="/login" replace />
+}
 
-    const token = Cookies.get('XSRF-TOKEN') || Cookies.get('topify_session');
-
-    if (!token) {
-        return <Navigate to="/login" replace />;
-    }
-
-    return children;
-};
-
-export default ProtectedRoute;
+export default ProtectedRoute

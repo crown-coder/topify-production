@@ -37,6 +37,7 @@ const CardDetails = () => {
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState('success');
+    const [cardProvider, setCardProvider] = useState('');
 
     const fetchCard = async () => {
         try {
@@ -53,6 +54,9 @@ const CardDetails = () => {
             const allCards = allCardsResponse.data.data;
 
             const matchingCard = allCards.find(card => card.card_id === cardId);
+
+            console.log("The matching card Data", matchingCard)
+            setCardProvider(matchingCard.provider)
 
             if (!matchingCard) {
                 setError('Card not found');
@@ -106,6 +110,7 @@ const CardDetails = () => {
                 <CardFundingForm
                     cardId={card.card_id}
                     currency={card.card_currency}
+                    cardProvider={cardProvider}
                     onSuccess={() => {
                         fetchCard();
                         closeModal();
@@ -124,6 +129,7 @@ const CardDetails = () => {
                     currentCardId={currentCardId}
                     cardId={card.card_id}
                     cardCurrency={card.card_currency}
+                    cardProvider={cardProvider}
                     onSuccess={() => {
                         fetchCard();
                         closeModal();
@@ -292,7 +298,7 @@ const CardDetails = () => {
                 </button>
             </div>
             <div className="w-full flex items-center max-lg:flex-col justify-between max-lg:grid-cols-1 gap-3 rounded-lg p-3 relative bg-white">
-                <div className={`w-[420px] h-fit rounded-xl shadow-xl shadow-blue-100 ${card.card_currency === 'NGN' ? 'bg-blue-500' : 'bg-gradient-to-b from-blue-950 via-blue-900 to-blue-950'} p-4 text-white`}>
+                <div className={`w-[420px] max-lg:w-full h-fit rounded-xl shadow-xl shadow-blue-100 ${card.card_currency === 'NGN' ? 'bg-blue-500' : 'bg-gradient-to-b from-blue-950 via-blue-900 to-blue-950'} p-4 text-white`}>
                     <div className="flex justify-between items-center mb-2">
                         <h1 className="text-xl font-light">
                             Smart<span className="font-semibold">Card</span>
@@ -394,7 +400,7 @@ const CardDetails = () => {
                             Delete
                         </button>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
+                    <div className="bg-white rounded-lg shadow p-6 max-lg:p-3 border border-gray-100">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800">Card Details</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>

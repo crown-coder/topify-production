@@ -138,7 +138,7 @@ const VirtualCard = () => {
         clearTimeout(idleTimeoutRef.current);
         idleTimeoutRef.current = setTimeout(() => {
             setShowIdleModal(true);
-        }, 2 * 60 * 1000); // 9 minutes
+        }, 9 * 60 * 1000); // 9 minutes
     }, [showIdleModal]);
 
     useEffect(() => {

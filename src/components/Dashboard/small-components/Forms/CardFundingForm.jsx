@@ -3,7 +3,7 @@ import { FiInfo, FiCreditCard, FiDollarSign, FiAlertCircle, FiCheckCircle } from
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const CardFundingForm = ({ cardId, onSuccess, currency }) => {
+const CardFundingForm = ({ cardId, onSuccess, currency, cardProvider }) => {
     const [amount, setAmount] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState({ text: '', isSuccess: false });
@@ -24,6 +24,28 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
         }).format(balance).replace('NGN', '₦');
     }, []);
 
+    const fetchExchangeRate = useCallback(async () => {
+        try {
+            const response = await axios.post('/api/getExchangeRates');
+            if (response.data.status === 'success') {
+                const providerRates = response.data[cardProvider.toLowerCase()];
+                if (providerRates) {
+                    // Use sell_rate for funding
+                    setExchangeRate(providerRates.sell_rate);
+                    console.log(providerRates.sell_rate)
+
+                } else {
+                    // Fallback to graph rates if provider not found
+                    setExchangeRate(response.data.graph.sell_rate);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching exchange rates:', err);
+            // Fallback to default rate if API fails
+            setExchangeRate(1693);
+        }
+    }, [cardProvider]);
+
     const fetchWalletData = useCallback(async () => {
         try {
             const xsrfToken = Cookies.get('XSRF-TOKEN');
@@ -39,17 +61,16 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
             };
 
             const [walletResponse, rateResponse] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, config),
-                axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`)
+                axios.get(`/api/api2/user`, config),
+                axios.post(`/api/getExchangeRates`)
             ]);
 
             setWalletBalance(walletResponse.data);
-            setExchangeRate(rateResponse.data.data.NGN || 1693);
         } catch (err) {
             console.error('Error fetching data:', err);
             setMessage({ text: 'Failed to fetch wallet data', isSuccess: false });
         }
-    }, []);
+    }, [fetchExchangeRate]);
 
     useEffect(() => {
         fetchWalletData();
@@ -61,7 +82,10 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
 
         const amountValue = parseFloat(amount);
         if (isNaN(amountValue) || amountValue < MINIMUM_AMOUNT) {
-            setMessage({ text: `Minimum funding amount is ₦${MINIMUM_AMOUNT.toLocaleString()}`, isSuccess: false });
+            setMessage({
+                text: `Minimum funding amount is ${currency === 'NGN' ? '₦' : '$'}${MINIMUM_AMOUNT.toLocaleString()}`,
+                isSuccess: false
+            });
             return;
         }
 
@@ -101,7 +125,7 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
 
             const isSuccess = response.data.status === "success";
             setMessage({
-                text: response.data.message || `Card funded successfully with ₦${amountValue.toLocaleString()}`,
+                text: response.data.message || `Card funded successfully with ${currency === 'NGN' ? '₦' : '$'}${amountValue.toLocaleString()}`,
                 isSuccess
             });
 
@@ -150,9 +174,6 @@ const CardFundingForm = ({ cardId, onSuccess, currency }) => {
                 .format(parseFloat(amount) / exchangeRate)
             : '0.00';
     }
-
-
-    const usdAmount = amount ? (parseFloat(amount) / exchangeRate).toFixed(2) : '0.00';
 
     return (
         <div className="max-w-md mx-auto">

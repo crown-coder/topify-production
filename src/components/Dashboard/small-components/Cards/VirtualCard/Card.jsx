@@ -6,7 +6,7 @@ import { useModal } from '../../../../ModalContext';
 import CardLayout from '../CardLayout';
 import CardFundingForm from '../../Forms/CardFundingForm';
 
-const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, cvv, balance, currency, lastFour, cardName }) => {
+const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, cvv, balance, currency, lastFour, cardName, cardProvider }) => {
     const { openModal, closeModal } = useModal();
     const navigate = useNavigate();
 
@@ -21,7 +21,7 @@ const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, 
         console.log(`Funding card with ID: ${cardId || 'unknown'}`);
         openModal(
             <CardLayout cardTitle={`Fund Card (${lastFour || '****'})`} closeModal={closeModal}>
-                <CardFundingForm cardId={cardId} currency={currency} />
+                <CardFundingForm cardId={cardId} currency={currency} cardProvider={cardProvider} />
             </CardLayout>
         );
     }

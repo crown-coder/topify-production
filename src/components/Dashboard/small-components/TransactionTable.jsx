@@ -1,6 +1,15 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
+import { IoRefresh } from "react-icons/io5";
+
+const fetchTransactions = async () => {
+    const response = await axios.get(`/api/transactions?search=&page=1&pageSize=10`);
+    return response.data;
+};
 
 const TransactionTable = () => {
     const navigate = useNavigate();
@@ -10,7 +19,7 @@ const TransactionTable = () => {
     useEffect(() => {
         const fetchTransactions = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/transactions?search=&page=1&pageSize=10`);
+                const response = await axios.get(`/api/transactions?search=&page=1&pageSize=10`);
                 setTransactions(response.data);
             } catch (error) {
                 console.error('Error fetching transactions:', error);
@@ -24,7 +33,7 @@ const TransactionTable = () => {
 
     const handleRowClick = (transaction) => {
         navigate(`/dashboard/transactions/receipt/${transaction.id}`, {
-            state: transaction
+            state: transaction,
         });
     };
 
@@ -33,14 +42,33 @@ const TransactionTable = () => {
         return new Intl.NumberFormat('en-NG', {
             style: 'currency',
             currency: 'NGN',
-            minimumFractionDigits: 2
+            minimumFractionDigits: 2,
         }).format(amount).replace('NGN', '₦');
     };
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className='px-5 pb-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
-                <p className='text-center py-4'>Loading transactions...</p>
+                <div className="space-y-2 py-4">
+                    {[...Array(5)].map((_, index) => (
+                        <div key={index} className='flex items-center gap-4'>
+                            <Skeleton height={20} width={30} />
+                            <Skeleton height={20} width={120} />
+                            <Skeleton height={20} width={100} />
+                            <Skeleton height={20} width={200} />
+                            <Skeleton height={20} width={80} />
+                            <Skeleton height={20} width={100} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className='px-5 pb-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
+                <p className='text-center py-4 text-red-500'>Error: {error.message}</p>
             </div>
         );
     }
@@ -55,6 +83,17 @@ const TransactionTable = () => {
 
     return (
         <div className='px-5 pb-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl overflow-x-auto'>
+            <div className='flex justify-between items-center mb-3'>
+                <h2 className='text-lg font-semibold text-gray-700 dark:text-white'>Recent Transactions</h2>
+                <button
+                    onClick={() => refetch()}
+                    disabled={isFetching}
+                    className={`text-xl cursor-pointer hover:opacity-80 transition-opacity ${isFetching ? 'animate-spin' : ''}`}
+                >
+                    <IoRefresh />
+                </button>
+            </div>
+
             <table className='w-full border-collapse'>
                 <thead>
                     <tr className='border border-gray-100 py-2 rounded-lg bg-[#FAFAFA] dark:bg-gray-700 text-[#969A98] text-sm text-left'>

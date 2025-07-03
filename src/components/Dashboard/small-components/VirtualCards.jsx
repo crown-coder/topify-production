@@ -22,6 +22,7 @@ const VirtualCards = () => {
     const [cardholderId, setCardholderId] = useState(null);
     const [userData, setUserData] = useState(null);
     const [showKycModal, setShowKycModal] = useState(false);
+    const [cardProvider, setCardProvider] = useState(null);
 
     const { openModal, closeModal } = useModal();
     const navigate = useNavigate();
@@ -58,6 +59,7 @@ const VirtualCards = () => {
             const allCards = response.data.data || [];
             const activeCards = allCards.filter(card => card.status === 'active');
             setAvailableCardTypes(activeCards);
+            console.log(activeCards)
             return activeCards;
         } catch (error) {
             console.error("Error fetching available cards:", error);
@@ -80,6 +82,7 @@ const VirtualCards = () => {
         try {
             setLoading(true);
             setError(null);
+            setCardProvider(provider);
 
             const xsrfToken = Cookies.get('XSRF-TOKEN');
             const otpToken = Cookies.get('otp_verified_token');
@@ -101,9 +104,6 @@ const VirtualCards = () => {
 
             const idResponse = await axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards?provider=${provider}`, config);
             const cardList = idResponse.data?.data || [];
-
-            // console.log('Fetched cards:', cardList.Array.isArray(cardList) ? cardList.length : 0);
-
 
             if (!Array.isArray(cardList) || cardList.length === 0) {
                 return [];
@@ -136,7 +136,6 @@ const VirtualCards = () => {
                 fetchAvailableCardTypes()
             ]);
 
-            // Check all possible providers for cards
             if (user.cardholder_ids && Object.keys(user.cardholder_ids).length > 0) {
                 for (const provider of Object.keys(user.cardholder_ids)) {
                     try {
@@ -151,7 +150,6 @@ const VirtualCards = () => {
                 }
             }
 
-            // If we get here, no cards were found
             setCards([]);
         } catch (err) {
             console.error('Initial data fetch error:', err);
@@ -363,6 +361,7 @@ const VirtualCards = () => {
                             cvv={card.cvv}
                             balance={parseFloat(card.balance)}
                             currency={card.card_currency}
+                            cardProvider={cardProvider}
                         />
                     ))}
                     <NewCard onClick={handleNewCard} />

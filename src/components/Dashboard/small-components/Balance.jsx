@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -13,22 +13,44 @@ import { RxEyeOpen } from "react-icons/rx";
 import { MdVerified } from "react-icons/md";
 import Cookies from 'js-cookie';
 
+const fetchUserData = async () => {
+  const response = await axios.get(`/api/api2/user`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    withCredentials: true,
+  });
+  return response.data;
+};
+
 const Balance = () => {
   const [isShowBalance, setIsShowBalance] = useState(true);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const { openModal, closeModal } = useModal();
-  const [isKYCCompleted, setIsKYCCompleted] = useState(false);
+  const xsrfToken = Cookies.get('XSRF-TOKEN');
   const [verified, setVerified] = useState(false);
 
-  const [isEmailVerified, setIsEmailVerified] = useState(false)
+  const {
+    data: user,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: ['user'],
+    queryFn: fetchUserData,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
+  });
 
-  const xsrfToken = Cookies.get('XSRF-TOKEN');
+
+  const isEmailVerified = user?.email_verified_at;
+  const isKYCCompleted = user?.kyc_verified;
 
   const handleVerifyClick = async () => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/email/verification-notification`,
+      const response = await axios.post(`/api/email/verification-notification`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -40,23 +62,19 @@ const Balance = () => {
 
       console.log(response.data)
       setVerified(true);
-
     } catch (err) {
-      console.error("Error Sending Verification Email", err)
+      console.error("Error Sending Verification Email", err);
     }
-
   };
 
   const handleKYCModal = () => {
-    openModal(
-      <KycCard closeModal={closeModal} />
-    );
+    openModal(<KycCard closeModal={closeModal} />);
   };
 
   const fetchUserData = async () => {
     setLoading(true)
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`,
+      const response = await axios.get(`/api/api2/user`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -96,7 +114,7 @@ const Balance = () => {
   };
 
   return (
-    <div className='p-2 bg-white  w-full my-2 rounded-xl'>
+    <div className='p-2 bg-white w-full my-2 rounded-xl'>
 
       {!isEmailVerified && (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 rounded-md max-w-md mb-2">
@@ -120,35 +138,26 @@ const Balance = () => {
       <div className='w-full flex justify-between items-center'>
         <div>
           <h2 className='font-semibold text-lg mb-[2px] text-[#434343] dark:text-white'>
-            Welcome Back, <span>{user?.name.split(' ')[0] || 'User'}</span>
+            Welcome Back, <span>{user?.name?.split(' ')[0] || 'User'}</span>
           </h2>
           {isKYCCompleted ? (
             <p className='flex items-center gap-1 italic text-green-500'>
-              <span className='text-xl'>
-                <MdVerified />
-              </span>
-              <span className='text-sm cursor-pointer'>
-                Verified User
-              </span>
+              <span className='text-xl'><MdVerified /></span>
+              <span className='text-sm cursor-pointer'>Verified User</span>
             </p>
           ) : (
             <p className='font-light text-sm text-[#E2B93B]'>
               Complete your KYC to enjoy all our services.
-              <span className='text-blue-500 cursor-pointer underline' onClick={handleKYCModal}>Proceed</span>
+              <span className='text-blue-500 cursor-pointer underline' onClick={handleKYCModal}> Proceed</span>
             </p>
           )}
         </div>
         <div className='flex gap-2 max-lg:hidden'>
-          <button className='cursor-pointer'>
-            <img src={Appstore} width={90} height={44} alt="App Store" />
-          </button>
-          <button>
-            <img src={Playstore} width={90} height={44} alt="Play Store" />
-          </button>
+          <button><img src={Appstore} width={90} height={44} alt="App Store" /></button>
+          <button><img src={Playstore} width={90} height={44} alt="Play Store" /></button>
         </div>
       </div>
 
-      {/* cards container */}
       <div className='w-full grid gap-3 grid-cols-1 lg:grid-cols-3 mt-3'>
         <Card
           className="first:bg-[#4CACF0] dark:first:bg-[#4CACF0] text-slate-100"
@@ -156,7 +165,7 @@ const Balance = () => {
           icon={<IoTrophyOutline />}
           title="Main Balance"
           amount={
-            loading || refreshing ? (
+            isLoading || isFetching ? (
               <Skeleton width={80} height={20} baseColor="#4CACF0" highlightColor="#85D7FF" />
             ) : (
               isShowBalance ?
@@ -174,19 +183,20 @@ const Balance = () => {
                 {isShowBalance ? <BiHide /> : <RxEyeOpen />}
               </button>
               <button
-                className={`text-xl cursor-pointer hover:opacity-80 transition-opacity ${refreshing ? 'animate-spin' : ''}`}
-                onClick={handleRefresh}
-                disabled={refreshing}
+                className={`text-xl cursor-pointer hover:opacity-80 transition-opacity ${isFetching ? 'animate-spin' : ''}`}
+                onClick={() => refetch()}
+                disabled={isFetching}
               >
                 <IoRefresh />
               </button>
             </div>
           }
         />
+
         <Card
           title="Referral Balance"
           amount={
-            loading ? (
+            isLoading ? (
               <Skeleton width={80} height={20} baseColor="#FFFFFF" highlightColor="#E0E0E0" />
             ) : (
               isShowBalance ?
@@ -204,6 +214,7 @@ const Balance = () => {
             </button>
           }
         />
+
         <Card
           className="font-normal text-lg"
           justify="items-center"

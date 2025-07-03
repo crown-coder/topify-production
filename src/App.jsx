@@ -4,6 +4,7 @@ import { ModalProvider } from './components/ModalContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Loader from './components/Dashboard/small-components/Loader';
 import Cookies from 'js-cookie';
+import { ToastContainer } from 'react-toastify'
 
 const Home = lazy(() => import('./pages/Home'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -62,6 +63,7 @@ const App = () => {
             </AuthRedirect>
           </Suspense>
         </Router>
+        <ToastContainer />
       </ModalProvider>
     </React.StrictMode>
   );

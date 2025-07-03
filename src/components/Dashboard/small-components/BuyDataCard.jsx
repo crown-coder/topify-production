@@ -1,19 +1,34 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import MultiCard from "./Cards/MultiCard";
 import PlainCard from "./Cards/PlainCard";
 import AirSubCard from "./Cards/SubCard";
 import { useModal } from "../../ModalContext";
 
+const fetchDataPlans = async () => {
+    const response = await axios.get("/api/data-plans");
+    return response.data?.mobile_networks || [];
+};
+
 const BuyDataCard = ({ activeButton, activeNetwork, cardBgColor }) => {
-    const [dataList, setDataList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { openModal } = useModal();
     const [showAll, setShowAll] = useState(false);
 
-    const { openModal } = useModal();
+    const {
+        data: dataList = [],
+        isLoading,
+        isError,
+        error,
+    } = useQuery({
+        queryKey: ["data-plans"],
+        queryFn: fetchDataPlans,
+        staleTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+    });
 
-    // Map mobile_network_id to network name
     const networkInfo = {
         1: { name: "MTN" },
         2: { name: "AIRTEL" },
@@ -21,34 +36,17 @@ const BuyDataCard = ({ activeButton, activeNetwork, cardBgColor }) => {
         4: { name: "9MOBILE" },
     };
 
-    useEffect(() => {
-        const fetchDataList = async () => {
-            try {
-                const response = await axios.get("/api/data-plans");
-                setDataList(response.data?.mobile_networks || []);
-            } catch (err) {
-                setError(err.response?.data?.message || "Error fetching data plans");
-                console.error("Data plans error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDataList();
-    }, []);
-
-    // Find the network by mobile_network_id (1-4)
-    const currentNetwork = dataList.find((network) =>
-        networkInfo[network.id]?.name === activeNetwork?.toUpperCase()
+    const currentNetwork = dataList.find(
+        (network) =>
+            networkInfo[network.id]?.name === activeNetwork?.toUpperCase()
     );
 
-    // Get all data plans for the active network, sorted by plan type
-    const networkPlans = currentNetwork?.plan_types
-        ?.flatMap((planType) =>
+    const networkPlans =
+        currentNetwork?.plan_types?.flatMap((planType) =>
             planType.data_plans.map((plan) => ({
                 ...plan,
                 planTypeName: planType.name,
-                key: `${currentNetwork.id}-${planType.id}-${plan.id}` // Create unique key
+                key: `${currentNetwork.id}-${planType.id}-${plan.id}`,
             }))
         ) || [];
 
@@ -58,28 +56,35 @@ const BuyDataCard = ({ activeButton, activeNetwork, cardBgColor }) => {
 
     const plansToRender = showAll ? networkPlans : networkPlans.slice(0, 8);
 
-    // Visual span logic for Bento layout
     const getCardSpanClass = (index) => {
         const pattern = [
-            "",               // 0: normal
-            "col-span-2",     // 1: wider
-            "",               // 2: normal
-            "row-span-2",     // 3: taller
-            "",               // 4: normal
-            "col-span-2",     // 5: wider
-            "",               // 6: normal
-            "",               // 7: normal
-            "row-span-2",     // 8: taller
-            "",               // 9: normal
-            "",               // 10: normal
-            "col-span-2",     // 11: wider
+            "", "col-span-2", "", "row-span-2", "", "col-span-2",
+            "", "", "row-span-2", "", "", "col-span-2",
         ];
         return pattern[index % pattern.length];
     };
 
-    if (loading) return <p>Loading data plans...</p>;
-    if (error) return <p className="text-red-500">{error}</p>;
-    if (networkPlans.length === 0) return <p>No data plans found for {activeNetwork}</p>;
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-4 auto-rows-[140px] gap-2">
+                {[...Array(8)].map((_, i) => (
+                    <div key={i} className="p-4 rounded-xl bg-white dark:bg-gray-700 shadow-sm">
+                        <Skeleton height={20} width={80} />
+                        <Skeleton height={15} width={100} className="mt-2" />
+                        <Skeleton height={20} width={60} className="mt-2" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    if (isError) {
+        return <p className="text-red-500">{error.message}</p>;
+    }
+
+    if (networkPlans.length === 0) {
+        return <p>No data plans found for {activeNetwork}</p>;
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -104,15 +109,6 @@ const BuyDataCard = ({ activeButton, activeNetwork, cardBgColor }) => {
                     );
                 })}
             </div>
-
-            {/* {networkPlans.length > 12 && (
-                <button
-                    className="self-center mt-4 text-blue-600 underline"
-                    onClick={() => setShowAll(!showAll)}
-                >
-                    {showAll ? "Show Less" : "Show More Data Plans"}
-                </button>
-            )} */}
         </div>
     );
 };
