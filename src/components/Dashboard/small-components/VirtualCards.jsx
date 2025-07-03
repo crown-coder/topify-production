@@ -37,7 +37,7 @@ const VirtualCards = () => {
                 withCredentials: true
             };
 
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, config);
+            const response = await axios.get(`/api/api2/user`, config);
             setUserData(response.data);
             return response.data;
         } catch (err) {
@@ -49,7 +49,7 @@ const VirtualCards = () => {
     const fetchAvailableCardTypes = async () => {
         try {
             const xsrfToken = Cookies.get('XSRF-TOKEN');
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
+            const response = await axios.post(`/api/getCardType`, {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -59,7 +59,6 @@ const VirtualCards = () => {
             const allCards = response.data.data || [];
             const activeCards = allCards.filter(card => card.status === 'active');
             setAvailableCardTypes(activeCards);
-            console.log(activeCards)
             return activeCards;
         } catch (error) {
             console.error("Error fetching available cards:", error);
@@ -102,7 +101,7 @@ const VirtualCards = () => {
                 withCredentials: true
             };
 
-            const idResponse = await axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards?provider=${provider}`, config);
+            const idResponse = await axios.get(`/api/Allvirtual-cards?provider=${provider}`, config);
             const cardList = idResponse.data?.data || [];
 
             if (!Array.isArray(cardList) || cardList.length === 0) {
@@ -110,7 +109,7 @@ const VirtualCards = () => {
             }
 
             const detailPromises = cardList.map(card =>
-                axios.get(`${import.meta.env.VITE_API_URL}/virtual-cards/${card.id}/details`, config)
+                axios.get(`/api/virtual-cards/${card.id}/details`, config)
             );
 
             const detailResponses = await Promise.all(detailPromises);

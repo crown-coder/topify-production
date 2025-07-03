@@ -19,7 +19,7 @@ const OtpModal = ({ onVerify, onResend, onClose }) => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/verify-otp`,
+                `/api/verify-otp`,
                 { otp },
                 {
                     headers: {

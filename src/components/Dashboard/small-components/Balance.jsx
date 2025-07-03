@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { useModal } from '../../ModalContext';
@@ -27,8 +28,8 @@ const fetchUserData = async () => {
 const Balance = () => {
   const [isShowBalance, setIsShowBalance] = useState(true);
   const { openModal, closeModal } = useModal();
-  const xsrfToken = Cookies.get('XSRF-TOKEN');
   const [verified, setVerified] = useState(false);
+  const xsrfToken = Cookies.get('XSRF-TOKEN');
 
   const {
     data: user,
@@ -44,13 +45,14 @@ const Balance = () => {
     retry: 1,
   });
 
-
   const isEmailVerified = user?.email_verified_at;
   const isKYCCompleted = user?.kyc_verified;
 
   const handleVerifyClick = async () => {
     try {
-      const response = await axios.post(`/api/email/verification-notification`,
+      const response = await axios.post(
+        `/api/email/verification-notification`,
+        {},
         {
           headers: {
             'Content-Type': 'application/json',
@@ -58,9 +60,8 @@ const Balance = () => {
           },
           withCredentials: true,
         }
-      )
-
-      console.log(response.data)
+      );
+      console.log(response.data);
       setVerified(true);
     } catch (err) {
       console.error("Error Sending Verification Email", err);
@@ -69,40 +70,6 @@ const Balance = () => {
 
   const handleKYCModal = () => {
     openModal(<KycCard closeModal={closeModal} />);
-  };
-
-  const fetchUserData = async () => {
-    setLoading(true)
-    try {
-      const response = await axios.get(`/api/api2/user`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          withCredentials: true,
-        });
-
-      setIsEmailVerified(response.data.email_verified_at)
-
-      setUser(response.data);
-      setIsKYCCompleted(response.data.kyc_verified);
-      setLoading(false)
-    } catch (err) {
-      console.error('Error fetching user data:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchUserData();
   };
 
   // Format balance for display

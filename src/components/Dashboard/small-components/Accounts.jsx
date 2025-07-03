@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import AccountCard from './AccountCard';
@@ -8,10 +8,8 @@ import Monie from '../../../assets/monie.png';
 import Wema from '../../../assets/wema.png';
 import Palmpay from '../../../assets/palmpay.png';
 import NinePayment from '../../../assets/9payment.jpg';
-import { IoRefresh } from "react-icons/io5";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-
 
 // Async fetch function
 const fetchUserAccounts = async () => {
@@ -23,10 +21,9 @@ const fetchUserAccounts = async () => {
     return response.data?.funding_accounts || [];
 };
 
-// Skeletal Loader
 const SkeletonAccountCard = () => (
-    <div className="p-4 max-lg:p-2 flex max-lg:flex-col gap-5 lg:gap-4 lg:p-[10px] rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse">
-        <div className="rounded-full bg-gray-300 w-[60px] h-[60px] max-lg:w-[40px] max-lg:h-[40px]"></div>
+    <div className="p-4 max-lg:p-2 flex max-lg:flex-col gap-5 lg:gap-4 lg:p-[10px] rounded-2xl bg-gray-300 dark:bg-gray-700 animate-pulse">
+        <div className="rounded-full bg-gray-400 w-[60px] h-[60px] max-lg:w-[40px] max-lg:h-[40px]"></div>
         <div className="flex-1 text-white space-y-2">
             <Skeleton width={120} height={16} />
             <Skeleton width={180} height={14} />
@@ -35,7 +32,6 @@ const SkeletonAccountCard = () => (
         </div>
     </div>
 );
-
 
 const Accounts = () => {
     const { openModal, closeModal } = useModal();
@@ -81,32 +77,32 @@ const Accounts = () => {
         },
     };
 
-    useEffect(() => {
-        const fetchUserAccounts = async () => {
-            try {
-                const response = await axios.get(`/api/api2/user`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                setUserAccounts(response.data?.funding_accounts || []);
-            } catch (err) {
-                console.error('Error fetching user accounts:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const displayAccounts = (userAccounts.length > 0
+        ? userAccounts
+        : [
+            {
+                bank_name: "Wema Bank",
+                account_name: "Default User",
+                account_number: "0000000000",
+            },
+            {
+                bank_name: "Sterling Bank",
+                account_name: "Default User",
+                account_number: "1111111111",
+            },
+            {
+                bank_name: "Moniepoint Microfinance Bank",
+                account_name: "Default User",
+                account_number: "2222222222",
+            },
+        ]
+    ).map((account) => ({
+        ...account,
+        ...(bankConfig[account.bank_name] || bankConfig['default']),
+    }));
 
-        fetchUserAccounts();
-    }, []);
 
-    const handleAccountModal = () => {
-        openModal(
-            <TempAccCard closeModal={closeModal} />
-        );
-    };
-
-    if (loading) {
+    if (isLoading || isFetching) {
         return (
             <div className='p-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
                 <div className='grid grid-cols-2 lg:grid-cols-3 gap-3 max-lg:gap-1'>
@@ -117,7 +113,6 @@ const Accounts = () => {
             </div>
         );
     }
-
 
 
     if (isError) {
@@ -131,16 +126,7 @@ const Accounts = () => {
     return (
         <div className='p-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
             <div className='w-full flex justify-between items-center mb-4'>
-                <div className='flex items-center gap-2'>
-                    <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Accounts</h2>
-                    <button
-                        className={`text-xl cursor-pointer hover:opacity-80 transition-opacity ${isFetching ? 'animate-spin' : ''}`}
-                        onClick={() => refetch()}
-                        disabled={isFetching}
-                    >
-                        <IoRefresh />
-                    </button>
-                </div>
+                <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Accounts</h2>
                 <button
                     className='px-4 py-2 rounded-lg cursor-pointer text-white text-sm bg-blue-500 hover:bg-blue-600 transition-colors'
                     onClick={handleAccountModal}

@@ -28,12 +28,11 @@ const CardFundingForm = ({ cardId, onSuccess, currency, cardProvider }) => {
         try {
             const response = await axios.post('/api/getExchangeRates');
             if (response.data.status === 'success') {
+                // Use the cardProvider prop to determine which rate to use
                 const providerRates = response.data[cardProvider.toLowerCase()];
                 if (providerRates) {
                     // Use sell_rate for funding
                     setExchangeRate(providerRates.sell_rate);
-                    console.log(providerRates.sell_rate)
-
                 } else {
                     // Fallback to graph rates if provider not found
                     setExchangeRate(response.data.graph.sell_rate);
@@ -60,9 +59,9 @@ const CardFundingForm = ({ cardId, onSuccess, currency, cardProvider }) => {
                 withCredentials: true
             };
 
-            const [walletResponse, rateResponse] = await Promise.all([
+            const [walletResponse] = await Promise.all([
                 axios.get(`/api/api2/user`, config),
-                axios.post(`/api/getExchangeRates`)
+                fetchExchangeRate() // Fetch exchange rate in parallel
             ]);
 
             setWalletBalance(walletResponse.data);
@@ -118,7 +117,7 @@ const CardFundingForm = ({ cardId, onSuccess, currency, cardProvider }) => {
             };
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/fund`,
+                `/api/virtual-cards/fund`,
                 requestBody,
                 config
             );

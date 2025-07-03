@@ -1,33 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { IoRefresh } from "react-icons/io5";
-
-const fetchTransactions = async () => {
-    const response = await axios.get(`/api/transactions?search=&page=1&pageSize=10`);
-    return response.data;
-};
 
 const TransactionTable = () => {
     const navigate = useNavigate();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchTransactions = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`/api/transactions?search=&page=1&pageSize=10`);
+            setTransactions(response.data);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching transactions:', err);
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchTransactions = async () => {
-            try {
-                const response = await axios.get(`/api/transactions?search=&page=1&pageSize=10`);
-                setTransactions(response.data);
-            } catch (error) {
-                console.error('Error fetching transactions:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchTransactions();
     }, []);
 
@@ -46,7 +44,7 @@ const TransactionTable = () => {
         }).format(amount).replace('NGN', '₦');
     };
 
-    if (isLoading) {
+    if (loading) {
         return (
             <div className='px-5 pb-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
                 <div className="space-y-2 py-4">
@@ -65,7 +63,7 @@ const TransactionTable = () => {
         );
     }
 
-    if (isError) {
+    if (error) {
         return (
             <div className='px-5 pb-5 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
                 <p className='text-center py-4 text-red-500'>Error: {error.message}</p>
@@ -86,9 +84,8 @@ const TransactionTable = () => {
             <div className='flex justify-between items-center mb-3'>
                 <h2 className='text-lg font-semibold text-gray-700 dark:text-white'>Recent Transactions</h2>
                 <button
-                    onClick={() => refetch()}
-                    disabled={isFetching}
-                    className={`text-xl cursor-pointer hover:opacity-80 transition-opacity ${isFetching ? 'animate-spin' : ''}`}
+                    onClick={fetchTransactions}
+                    className="text-xl cursor-pointer hover:opacity-80 transition-opacity"
                 >
                     <IoRefresh />
                 </button>

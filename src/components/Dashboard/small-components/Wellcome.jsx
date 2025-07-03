@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import axios from 'axios';
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { useModal } from '../../ModalContext';
 import KycCard from './Cards/KycCard';
 import { MdVerified } from "react-icons/md";
+import { useQuery } from '@tanstack/react-query';
 
 const fetchUserData = async () => {
-    const response = await axios.get(`/api/api2/user`);
+    const response = await axios.get(`/api/api2/user`, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        withCredentials: true,
+    });
     return response.data;
 };
 
 const Welcome = () => {
-    const { openModal } = useModal();
+    const { openModal, closeModal } = useModal();
 
     const {
         data: user,
@@ -28,24 +35,8 @@ const Welcome = () => {
     });
 
     const handleKYCModal = () => {
-        openModal(<KycCard closeModal={() => { }} />);
+        openModal(<KycCard closeModal={closeModal} />);
     };
-
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await axios.get(`/api/api2/user`);
-                setUser(response.data);
-            } catch (err) {
-                console.error('Error fetching user data:', err);
-                setError('Failed to load user data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUserData();
-    }, []);
 
     const formatBalance = (balance) => {
         if (!balance) return '₦0.00';
@@ -59,7 +50,7 @@ const Welcome = () => {
     if (isError) {
         return (
             <div className='px-5 py-3 bg-white dark:bg-gray-800 w-full my-2 rounded-xl'>
-                <p className="text-red-500">Error: {error.message}</p>
+                <p className="text-red-500">Error: {error?.message || 'Something went wrong'}</p>
             </div>
         );
     }

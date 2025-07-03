@@ -73,6 +73,8 @@ const CreateVirtualCard = ({ onCardCreated }) => {
     const [frontIdPreview, setFrontIdPreview] = useState('');
     const [backIdImage, setBackIdImage] = useState(null);
     const [backIdPreview, setBackIdPreview] = useState('');
+    const [bankStatement, setBankStatement] = useState(null);
+    const [bankStatementPreview, setBankStatementPreview] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const videoRef = useRef(null);
@@ -82,7 +84,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
     const fetchAvailableCards = async () => {
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getCardType`, {
+            const response = await axios.post('/api/getCardType', {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -105,7 +107,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
     const fetchFieldRequirements = async (cardId) => {
         setIsLoadingFields(true);
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/card-types/${cardId}/fields`, {
+            const response = await axios.get(`/api/card-types/${cardId}/fields`, {
                 headers: {
                     'X-XSRF-TOKEN': xsrfToken,
                 },
@@ -119,7 +121,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
 
             // Initialize basic fields
             Object.keys(requirements).forEach(field => {
-                if (field !== 'id_type' && !['selfie_image', 'front_card', 'back_card', 'passport_image'].includes(field)) {
+                if (field !== 'id_type' && !['selfie_image', 'front_card', 'back_card', 'passport_image', 'bank_statement'].includes(field)) {
                     initialFormData[field] = '';
                 }
             });
@@ -151,6 +153,8 @@ const CreateVirtualCard = ({ onCardCreated }) => {
         setFrontIdPreview('');
         setBackIdImage(null);
         setBackIdPreview('');
+        setBankStatement(null);
+        setBankStatementPreview('');
         await fetchFieldRequirements(card.id);
     };
 
@@ -186,6 +190,18 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                     setBackIdImage(file);
                     if (errors.backId) setErrors(prev => ({ ...prev, backId: '' }));
                 }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleBankStatementChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setBankStatementPreview(reader.result);
+                setBankStatement(file);
             };
             reader.readAsDataURL(file);
         }
@@ -270,6 +286,11 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             newErrors.date_of_birth = 'Date of birth is required';
         }
 
+        // Validate bank ID number if required
+        if (requirements.bank_id_number === 'bvn required' && !formData.bank_id_number) {
+            newErrors.bank_id_number = 'Bank verification number is required';
+        }
+
         // Validate ID type specific fields
         if (formData.id_type && requirements.id_type) {
             const idTypeRequirements = requirements.id_type[formData.id_type];
@@ -296,6 +317,11 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             newErrors.selfie = 'Selfie image is required';
         }
 
+        // Validate bank statement if required
+        if (requirements.bank_statement === 'required' && !bankStatement) {
+            newErrors.bank_statement = 'Bank statement is required';
+        }
+
         return newErrors;
     };
 
@@ -317,6 +343,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
         console.log("Selfie Image:", selfieImage ? `File (${selfieImage.name}, ${selfieImage.size} bytes)` : "None");
         console.log("Front ID Image:", frontIdImage ? `File (${frontIdImage.name}, ${frontIdImage.size} bytes)` : "None");
         console.log("Back ID Image:", backIdImage ? `File (${backIdImage.name}, ${backIdImage.size} bytes)` : "None");
+        console.log("Bank Statement:", bankStatement ? `File (${bankStatement.name}, ${bankStatement.size} bytes)` : "None");
         console.groupEnd();
 
         setIsSubmitting(true);
@@ -332,15 +359,19 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                 }
             });
 
-            // Add files based on ID type
+            // Add files
             if (selfieImage) formDataToSend.append('selfie_image', selfieImage);
-
-            if (formData.id_type === 'nin') {
-                if (frontIdImage) formDataToSend.append('front_card', frontIdImage);
-                if (backIdImage) formDataToSend.append('back_card', backIdImage);
-            } else if (formData.id_type === 'passport') {
-                if (frontIdImage) formDataToSend.append('passport_image', frontIdImage);
+            if (frontIdImage) {
+                if (formData.id_type === 'nin') {
+                    formDataToSend.append('front_card', frontIdImage);
+                } else if (formData.id_type === 'passport') {
+                    formDataToSend.append('passport_image', frontIdImage);
+                } else {
+                    formDataToSend.append('front_card', frontIdImage);
+                }
             }
+            if (backIdImage) formDataToSend.append('back_card', backIdImage);
+            if (bankStatement) formDataToSend.append('bank_statement', bankStatement);
 
             // Log final FormData contents
             console.group("📦 Final FormData Contents:");
@@ -354,7 +385,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             console.groupEnd();
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/create-holder`,
+                `/api/virtual-cards/create-holder`,
                 formDataToSend,
                 {
                     headers: {
@@ -417,6 +448,25 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                     error={errors.date_of_birth}
                     required={true}
                     type="date"
+                />
+            );
+        }
+
+        // Show bank ID number if required
+        if (requirements.bank_id_number === 'bvn required') {
+            fields.push(
+                <FormField
+                    key="bank_id_number"
+                    label="Bank Verification Number (BVN)"
+                    name="bank_id_number"
+                    value={formData.bank_id_number || ''}
+                    onChange={handleChange}
+                    placeholder="Enter your BVN"
+                    error={errors.bank_id_number}
+                    required={true}
+                    type="text"
+                    maxLength="11"
+                    minLength="11"
                 />
             );
         }
@@ -672,6 +722,50 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                             </div>
                             {errors.selfie && (
                                 <p className="mt-1 text-xs text-red-500">{errors.selfie}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Show bank statement if required
+        if (requirements.bank_statement === 'required') {
+            fields.push(
+                <div key="bankStatement">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Bank Statement <span className="text-red-500">*</span>
+                    </label>
+                    {bankStatementPreview ? (
+                        <div className="mb-2">
+                            <div className="h-32 w-full bg-gray-100 rounded-lg border flex items-center justify-center">
+                                <TiDocumentText className="h-12 w-12 text-gray-400" />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBankStatementPreview('');
+                                    setBankStatement(null);
+                                }}
+                                className="mt-2 text-sm text-red-600 hover:text-red-800"
+                            >
+                                Change File
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer inline-block">
+                                Upload Bank Statement
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={handleBankStatementChange}
+                                    className="hidden"
+                                />
+                            </label>
+                            <p className="text-xs text-gray-500">Accepted formats: PDF, JPG, PNG</p>
+                            {errors.bank_statement && (
+                                <p className="mt-1 text-xs text-red-500">{errors.bank_statement}</p>
                             )}
                         </div>
                     )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiInfo, FiDollarSign, FiAlertCircle, FiCreditCard, FiCheckCircle } from 'react-icons/fi';
+import { FiInfo, FiDollarSign, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { BsBank2 } from "react-icons/bs";
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -17,7 +17,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
     const [userBanks, setUserBanks] = useState([]);
     const [selectedBank, setSelectedBank] = useState('');
     const [isLoadingBanks, setIsLoadingBanks] = useState(false);
-    let MINIMUM_AMOUNT = cardCurrency === 'USD' ? 1 : 1000;
+    const MINIMUM_AMOUNT = cardCurrency === 'USD' ? 1 : 1000;
 
     const fetchExchangeRate = useCallback(async () => {
         try {
@@ -26,7 +26,6 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                 const providerRates = response.data[cardProvider.toLowerCase()];
                 if (providerRates) {
                     setExchangeRate(providerRates.buy_rate);
-                    console.log("we sell value ", providerRates.buy_rate)
                 } else {
                     setExchangeRate(response.data.graph.buy_rate);
                 }
@@ -48,17 +47,9 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                     withCredentials: true
                 };
 
-<<<<<<< HEAD
-                const [cardsResponse, rateResponse] = await Promise.all([
-                    axios.get(`${import.meta.env.VITE_API_URL}/Allvirtual-cards`, config),
-                    axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`)
-=======
-                const [cardsResponse] = await Promise.all([
-                    axios.get(`/api/Allvirtual-cards`, config),
-                    fetchExchangeRate()
->>>>>>> Complete Beta Version 1
-                ]);
+                await fetchExchangeRate();
 
+                const cardsResponse = await axios.get(`/api/Allvirtual-cards`, config);
                 const matchingCard = cardsResponse.data.data.find(card => card.id === currentCardId);
                 if (!matchingCard) throw new Error('Card not found');
 
@@ -90,7 +81,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                     withCredentials: true
                 };
 
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/bank-accounts`, config);
+                const response = await axios.get(`/api/bank-accounts`, config);
                 if (response.data?.data?.length > 0) {
                     setUserBanks(response.data.data);
                     setSelectedBank(response.data.data[0].id);
@@ -195,16 +186,8 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                 payload.bankAccNo = selectedBankDetails.account_number;
             }
 
-<<<<<<< HEAD
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/payout`,
-                payload,
-                config
-            );
-=======
             const response = await axios.post(`/api/virtual-cards/payout`, payload, config);
             const isSuccess = response.data?.success || response.data?.status?.toLowerCase() === 'success';
->>>>>>> Complete Beta Version 1
 
             if (!isSuccess) throw new Error(response.data?.message || 'Withdrawal failed');
 
@@ -242,11 +225,8 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
     };
 
     const getSelectedBankDetails = () => {
-        if (!selectedBank || !userBanks.length) return null;
         const bank = userBanks.find(b => b.id === selectedBank);
-        if (!bank) return null;
-
-        return (
+        return bank ? (
             <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
                 <div className="flex justify-between">
                     <span className="text-gray-600">Bank:</span>
@@ -261,7 +241,7 @@ const CardWithdrawalForm = ({ cardId, onSuccess, cardCurrency, currentCardId, cl
                     <span className="font-medium">{bank.account_name}</span>
                 </div>
             </div>
-        );
+        ) : null;
     };
 
     const handleAddAccount = () => {
