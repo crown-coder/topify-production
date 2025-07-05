@@ -21,7 +21,7 @@ const NewVirtualCardForm = ({ onCreateCard, closeModal, selectedCard }) => {
     const fetchWalletBalance = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`)
+            const response = await axios.get(`/api/api2/user`)
             setWalletBalance(response.data.wallet.balance);
         } catch (err) {
             console.error('Error fetching user data:', err);
@@ -39,7 +39,7 @@ const NewVirtualCardForm = ({ onCreateCard, closeModal, selectedCard }) => {
     const fetchExchangeRate = async () => {
         setLoading(true);
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/getExchangeRates`);
+            const response = await axios.post(`/api/getExchangeRates`);
             setExchangeRate(response.data.data.app_rate);
             // console.log('Exchange Rate:', response.data.data.app_rate);
         } catch (err) {
@@ -82,7 +82,7 @@ const NewVirtualCardForm = ({ onCreateCard, closeModal, selectedCard }) => {
             };
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/card/create`,
+                `/api/virtual-cards/card/create`,
                 requestData,
                 {
                     headers: {

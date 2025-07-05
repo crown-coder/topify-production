@@ -31,7 +31,7 @@ const DataForm = ({ selectedPlan = {}, activeNetwork }) => {
   useEffect(() => {
     const fetchWalletBalance = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api2/user`, {
+        const response = await axios.get(`/api/api2/user`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -94,7 +94,7 @@ const DataForm = ({ selectedPlan = {}, activeNetwork }) => {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/buy_data`,
+        `/api/buy_data`,
         {
           phone_number: formattedPhoneNumber,
           mobile_network: networkId,
