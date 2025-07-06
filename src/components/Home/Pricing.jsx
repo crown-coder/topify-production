@@ -6,7 +6,7 @@ import SecondStartFish from '../../assets/home/star-fish2.png'
 import ThirdStartFish from '../../assets/home/star-fish3.png'
 import FourthStartFish from '../../assets/home/star-fish4.png'
 
-import MtnIcon from '../../assets/home/mtn.png'
+import MtnIcon from '../../assets/home/MTN.png'
 import AirtelIcon from '../../assets/home/airtel.png'
 import GloIcon from '../../assets/home/glo.png'
 import NineMobileIcon from '../../assets/home/9mobile.png'
