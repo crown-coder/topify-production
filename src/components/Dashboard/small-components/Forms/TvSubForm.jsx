@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import DSTV from '../../../../assets/Dstv.png';
-import STARTIMES from '../../../../assets/Startimes.png';
+import STARTIMES from '../../../../assets/startimes.png';
 import GOTV from '../../../../assets/gotv.png';
 import { useModal } from '../../../ModalContext';
 import { MdCancel } from "react-icons/md";
