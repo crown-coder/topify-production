@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { CheckCircleIcon } from '@heroicons/react/20/solid';
-
+import { FaCircleCheck } from "react-icons/fa6";
 // Predefined gradient colors for cards
 const cardGradients = [
     'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Purple-blue
@@ -106,7 +105,7 @@ const CardSelectionModal = ({ cards, onSelect, onClose }) => {
                                     <h3 className="font-bold text-lg">{card.name}</h3>
                                 </div>
                                 {selectedCard?.id === card.id && (
-                                    <CheckCircleIcon className="h-5 w-5 text-white" />
+                                    <FaCircleCheck className="h-5 w-5 text-white" />
                                 )}
                             </div>
 
@@ -159,7 +158,7 @@ const CardSelectionModal = ({ cards, onSelect, onClose }) => {
                     <ul className="text-sm space-y-2 max-h-[130px] overflow-y-scroll">
                         {selectedCard.features.map((feature, i) => (
                             <li key={i} className="flex items-start">
-                                <CheckCircleIcon className="h-4 w-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
+                                <FaCircleCheck className="h-4 w-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
                                 <span className="text-gray-700">{feature}</span>
                             </li>
                         ))}
