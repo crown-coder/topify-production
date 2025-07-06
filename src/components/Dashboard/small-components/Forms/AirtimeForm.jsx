@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Glo from '../../../../assets/Glo.png';
-import Airtel from '../../../../assets/airtel.png';
+import Airtel from '../../../../assets/Airtel.png';
 import { useModal } from '../../../ModalContext';
 import { MdCancel } from "react-icons/md";
 import { TailSpin } from 'react-loader-spinner';
