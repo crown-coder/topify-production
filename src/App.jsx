@@ -9,7 +9,6 @@ import { ToastContainer } from 'react-toastify'
 const Home = lazy(() => import('./pages/Home'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const NewHome = lazy(() => import('./pages/NewHome'));
 const SignUp = lazy(() => import('./pages/SignUp'));
 const Login = lazy(() => import('./pages/Login'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -55,7 +54,6 @@ const App = () => {
                     </ProtectedRoute>
                   }
                 />
-                <Route path='/new-home' element={<NewHome />} />
                 <Route path='/signup' element={<SignUp />} />
                 <Route path='/login' element={<Login />} />
                 <Route path='/forgot-password' element={<ForgotPassword />} />
