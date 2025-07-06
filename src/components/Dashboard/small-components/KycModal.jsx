@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { FaCheckCircle } from "react-icons/fa";
+import { IoIosCloseCircle } from "react-icons/io";
 import AlertBox from './AlertBox';
 import { TiDocumentText } from "react-icons/ti";
 
@@ -676,7 +677,7 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
                                     }}
                                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                                 >
-                                    <XMarkIcon className="h-4 w-4" />
+                                    <IoIosCloseCircle className="h-4 w-4" />
                                 </button>
                             </div>
                         </div>
@@ -799,7 +800,7 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
                                 "Access to all card features"
                             ].map((item, index) => (
                                 <li key={index} className="flex items-start">
-                                    <CheckCircleIcon className="h-5 w-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
+                                    <FaCheckCircle className="h-5 w-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
                                     <span>{item}</span>
                                 </li>
                             ))}
