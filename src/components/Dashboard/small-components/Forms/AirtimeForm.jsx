@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Glo from '../../../../assets/glo.png';
+import Glo from '../../../../assets/Glo.png';
 import Airtel from '../../../../assets/airtel.png';
 import { useModal } from '../../../ModalContext';
 import { MdCancel } from "react-icons/md";
