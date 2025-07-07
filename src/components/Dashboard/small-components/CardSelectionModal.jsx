@@ -37,7 +37,7 @@ const CardSelectionModal = ({ cards, onSelect, onClose }) => {
         setIsLoading(true);
         try {
             await onSelect(selectedCard);
-            onClose();
+            onClose;
         } finally {
             setIsLoading(false);
         }
