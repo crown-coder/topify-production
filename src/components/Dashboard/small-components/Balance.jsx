@@ -48,11 +48,13 @@ const Balance = () => {
   const isEmailVerified = user?.email_verified_at;
   const isKYCCompleted = user?.kyc_verified;
 
-  const handleVerifyClick = async () => {
+   const handleVerifyClick = async () => {
     try {
       const response = await axios.post(
-        `/api/email/verification-notification`,
-        {},
+        `/api/custom-email/verification-notification`,
+        {
+          email: user?.email,
+        },
         {
           headers: {
             'Content-Type': 'application/json',
