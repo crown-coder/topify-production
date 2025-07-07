@@ -823,6 +823,7 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
 
                         <button
                             type="submit"
+                            onClick={handleSubmit()}
                             disabled={isSubmitting}
                             className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-colors ${isSubmitting
                                 ? 'bg-blue-400 cursor-not-allowed'
