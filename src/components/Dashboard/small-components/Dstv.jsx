@@ -10,7 +10,7 @@ const Dstv = ({ onClick }) => {
     useEffect(() => {
         const fetchDstvPlans = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/cable-networks?withPlans=true`);
+                const response = await axios.get(`/api/cable-networks?withPlans=true`);
                 const dstvData = response.data.find(network => network.name === "DSTV");
 
                 if (dstvData && dstvData.plans) {

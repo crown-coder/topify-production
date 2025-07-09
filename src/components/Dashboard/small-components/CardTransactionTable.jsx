@@ -8,7 +8,6 @@ const CardTransactionTable = ({ cardId, cardCurrency }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
-    const [viewMode, setViewMode] = useState('api'); // 'api' or 'local'
     const [resending, setResending] = useState(false);
 
     const fetchTransactions = async () => {
@@ -16,16 +15,16 @@ const CardTransactionTable = ({ cardId, cardCurrency }) => {
             setLoading(true);
             const xsrfToken = Cookies.get('XSRF-TOKEN');
 
-                const response = await axios.get(
-                    `/api/virtual-cards/transactions/${cardId}?page=1&currency=${cardCurrency}`,
-                    {
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(xsrfToken && { 'X-XSRF-TOKEN': xsrfToken }),
-                        },
-                        withCredentials: true,
-                    }
-                );
+            const response = await axios.get(
+                `/api/virtual-cards/transactions/${cardId}?page=1&currency=${cardCurrency}`,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(xsrfToken && { 'X-XSRF-TOKEN': xsrfToken }),
+                    },
+                    withCredentials: true,
+                }
+            );
 
             const { apiTransaction, localTransaction } = response.data;
 
@@ -71,33 +70,18 @@ const CardTransactionTable = ({ cardId, cardCurrency }) => {
         setSelectedTransaction(null);
     };
 
-    const transactionsToRender = viewMode === 'api' ? apiTransactions : localTransactions;
+    // Combine transactions with local ones first
+    const allTransactions = [...localTransactions, ...apiTransactions];
 
     return (
         <div className="w-full my-3 rounded-lg bg-white p-4">
-            <div className="flex max-lg:flex-col max-lg:gap-2 lg:justify-between lg:items-center mb-4">
-                <h2 className="text-lg font-semibold">Card Transaction History</h2>
-                <div className="space-x-2">
-                    <button
-                        onClick={() => setViewMode('api')}
-                        className={`px-3 py-1 rounded ${viewMode === 'api' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                    >
-                        Card Transactions
-                    </button>
-                    <button
-                        onClick={() => setViewMode('local')}
-                        className={`px-3 py-1 rounded ${viewMode === 'local' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                    >
-                        Local Transactions
-                    </button>
-                </div>
-            </div>
+            <h2 className="text-lg font-semibold mb-4">Card Transaction History</h2>
 
             {loading ? (
                 <div>Loading transactions...</div>
             ) : error ? (
                 <div className="text-red-600">{error}</div>
-            ) : transactionsToRender.length === 0 ? (
+            ) : allTransactions.length === 0 ? (
                 <div>No transactions found</div>
             ) : (
                 <div className="max-h-[300px] overflow-y-scroll">
@@ -111,15 +95,15 @@ const CardTransactionTable = ({ cardId, cardCurrency }) => {
                                 <td className='p-3'>Date</td>
                                 <td className='p-3 max-lg:hidden'>Type</td>
                                 <td className='p-3 max-lg:hidden'>Reference</td>
-                                {viewMode === 'local' && <td className='p-3'>Action</td>}
+                                <td className='p-3'>Action</td>
                             </tr>
                         </thead>
                         <tbody>
-                            {transactionsToRender.map((tx, index) => (
+                            {allTransactions.map((tx, index) => (
                                 <tr
                                     key={tx.client_transaction_reference || index}
                                     className='border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-800 dark:text-gray-300'
-                                    onClick={() => viewMode === 'api' && handleRowClick(tx)}
+                                    onClick={() => handleRowClick(tx)}
                                 >
                                     <td className='p-3'>{index + 1}</td>
                                     <td className='p-3'>{tx.description}</td>
@@ -128,19 +112,21 @@ const CardTransactionTable = ({ cardId, cardCurrency }) => {
                                     <td className='p-3'>{tx.transaction_date}</td>
                                     <td className='p-3 max-lg:hidden'>{tx.card_transaction_type}</td>
                                     <td className='p-3 max-lg:hidden'>{tx.client_transaction_reference}</td>
-                                    {viewMode === 'local' && (
-                                        <td className='p-3'>
+                                    <td className='p-3'>
+                                        {/* Show retry button only for local transactions */}
+                                        {localTransactions.includes(tx) && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleResend(tx);
                                                 }}
                                                 className="text-sm text-blue-600 underline"
+                                                disabled={resending}
                                             >
-                                                {resending ? 'Sending...' : 'Resend'}
+                                                {resending ? 'Sending...' : 'Retry'}
                                             </button>
-                                        </td>
-                                    )}
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -150,7 +136,7 @@ const CardTransactionTable = ({ cardId, cardCurrency }) => {
 
             {/* Transaction Receipt Modal */}
             {selectedTransaction && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/20 bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg max-w-md w-full">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold">Transaction Receipt</h3>

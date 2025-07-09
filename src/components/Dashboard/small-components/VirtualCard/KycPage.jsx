@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { TbArrowLeft } from 'react-icons/tb';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
-import AlertBox from './AlertBox';
+import { FaCheckCircle } from "react-icons/fa";
+import { IoIosCloseCircle } from "react-icons/io";
+import AlertBox from '../../small-components/AlertBox';
 import { TiDocumentText } from "react-icons/ti";
+import { useParams, useNavigate } from 'react-router-dom';
 
 const FormField = ({ label, name, value, onChange, placeholder, error, type = 'text', required = true, ...props }) => (
     <div>
@@ -54,7 +57,9 @@ const CameraModal = ({ onCapture, onCancel, videoRef, canvasRef }) => (
     </div>
 );
 
-const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
+const KycPage = () => {
+    const { cardId } = useParams();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [alert, setAlert] = useState({
         show: false,
@@ -81,15 +86,11 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
     const xsrfToken = Cookies.get('XSRF-TOKEN');
 
     useEffect(() => {
-        console.log("Current cardTypeId:", cardTypeId);
-    }, [cardTypeId]);
-
-    useEffect(() => {
         let isMounted = true;
 
         const fetchFieldRequirements = async () => {
             try {
-                const response = await axios.get(`/api/card-types/${cardTypeId}/fields`, {
+                const response = await axios.get(`/api/card-types/${cardId}/fields`, {
                     headers: {
                         'X-XSRF-TOKEN': xsrfToken,
                     },
@@ -102,11 +103,8 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
                     const initialData = {};
                     const requirements = response.data.data.required_fields;
 
-                    console.log("the required fields", requirements)
-
-                    // Initialize basic fields
                     Object.keys(requirements).forEach(field => {
-                        if (field !== 'id_type' && !['selfie_image', 'front_card', 'back_card', 'passport_image', 'bank_statement'].includes(field)) {
+                        if (!['selfie_image', 'front_card', 'back_card', 'passport_image', 'bank_statement'].includes(field)) {
                             initialData[field] = '';
                         }
                     });
@@ -129,14 +127,14 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
             }
         };
 
-        if (cardTypeId) {
+        if (cardId) {
             fetchFieldRequirements();
         }
 
         return () => {
             isMounted = false;
         };
-    }, [cardTypeId]);
+    }, [cardId]);
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
@@ -261,43 +259,42 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
         const newErrors = {};
         const requirements = fieldRequirements.required_fields;
 
-        // Validate required fields
         if (requirements.date_of_birth === 'required' && !formData.date_of_birth) {
             newErrors.date_of_birth = 'Date of birth is required';
         }
 
-        // Validate bank ID number if required
         if (requirements.bank_id_number === 'bvn required' && !formData.bank_id_number) {
             newErrors.bank_id_number = 'Bank verification number is required';
         }
 
-        // Validate ID type specific fields
-        if (formData.id_type && requirements.id_type) {
-            const idTypeRequirements = requirements.id_type[formData.id_type];
+        if (requirements.id_type) {
+            if (!formData.id_type) {
+                newErrors.id_type = 'ID type is required';
+            } else {
+                const idTypeRequirements = requirements.id_type[formData.id_type];
 
-            if (idTypeRequirements) {
-                Object.entries(idTypeRequirements).forEach(([field, requirement]) => {
-                    if (requirement.includes('required')) {
-                        if (field === 'front_card' && !frontIdImage) {
-                            newErrors.frontId = 'Front of ID is required';
-                        } else if (field === 'back_card' && !backIdImage) {
-                            newErrors.backId = 'Back of ID is required';
-                        } else if (field === 'passport_image' && !frontIdImage) {
-                            newErrors.passport_image = 'Passport image is required';
-                        } else if (!formData[field]) {
-                            newErrors[field] = `${field.replace(/_/g, ' ')} is required`;
+                if (idTypeRequirements) {
+                    Object.entries(idTypeRequirements).forEach(([field, requirement]) => {
+                        if (requirement.includes('required')) {
+                            if (field === 'front_card' && formData.id_type === 'nin' && !frontIdImage) {
+                                newErrors.frontId = 'Front of NIN is required';
+                            } else if (field === 'passport_image' && formData.id_type === 'passport' && !frontIdImage) {
+                                newErrors.passport_image = 'Passport image is required';
+                            } else if (field === 'back_card' && formData.id_type === 'nin' && !backIdImage) {
+                                newErrors.backId = 'Back of NIN is required';
+                            } else if (!['front_card', 'back_card', 'passport_image'].includes(field) && !formData[field]) {
+                                newErrors[field] = `${field.replace(/_/g, ' ')} is required`;
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         }
 
-        // Validate selfie image
         if (requirements.selfie_image === 'image required' && !selfieImage) {
             newErrors.selfie = 'Selfie image is required';
         }
 
-        // Validate bank statement if required
         if (requirements.bank_statement === 'required' && !bankStatement) {
             newErrors.bank_statement = 'Bank statement is required';
         }
@@ -314,55 +311,33 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
             return;
         }
 
-        console.log("🟢 Starting form submission process");
-
-        // Log all data that will be submitted
-        console.group("📋 SUBMISSION DATA:");
-        console.log("Card Type ID:", cardTypeId);
-        console.log("Form Fields:", JSON.parse(JSON.stringify(formData)));
-        console.log("Selfie Image:", selfieImage ? `File (${selfieImage.name}, ${selfieImage.size} bytes)` : "None");
-        console.log("Front ID Image:", frontIdImage ? `File (${frontIdImage.name}, ${frontIdImage.size} bytes)` : "None");
-        console.log("Back ID Image:", backIdImage ? `File (${backIdImage.name}, ${backIdImage.size} bytes)` : "None");
-        console.log("Bank Statement:", bankStatement ? `File (${bankStatement.name}, ${bankStatement.size} bytes)` : "None");
-        console.groupEnd();
-
         setIsSubmitting(true);
 
         try {
             const formDataToSend = new FormData();
-            formDataToSend.append('card_type_id', cardTypeId);
+            formDataToSend.append('card_type_id', cardId);
 
-            // Add all form fields
             Object.entries(formData).forEach(([key, value]) => {
                 if (value !== '' && value !== null && value !== undefined) {
                     formDataToSend.append(key, value);
                 }
             });
 
-            // Add files
             if (selfieImage) formDataToSend.append('selfie_image', selfieImage);
-            if (frontIdImage) {
-                if (formData.id_type === 'nin') {
-                    formDataToSend.append('front_card', frontIdImage);
-                } else if (formData.id_type === 'passport') {
-                    formDataToSend.append('passport_image', frontIdImage);
-                } else {
-                    formDataToSend.append('front_card', frontIdImage);
-                }
-            }
-            if (backIdImage) formDataToSend.append('back_card', backIdImage);
-            if (bankStatement) formDataToSend.append('bank_statement', bankStatement);
 
-            // Log final FormData contents
-            console.group("📦 Final FormData Contents:");
-            for (let [key, value] of formDataToSend.entries()) {
-                if (value instanceof File) {
-                    console.log(`${key}:`, value.name, `(File, ${value.size} bytes)`);
-                } else {
-                    console.log(`${key}:`, value);
+            if (frontIdImage) {
+                if (formData.id_type === 'passport') {
+                    formDataToSend.append('passport_image', frontIdImage);
+                } else if (formData.id_type === 'nin') {
+                    formDataToSend.append('front_card', frontIdImage);
                 }
             }
-            console.groupEnd();
+
+            if (backIdImage && formData.id_type === 'nin') {
+                formDataToSend.append('back_card', backIdImage);
+            }
+
+            if (bankStatement) formDataToSend.append('bank_statement', bankStatement);
 
             const response = await axios.post(
                 `/api/virtual-cards/create-holder`,
@@ -376,19 +351,18 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
                 }
             );
 
-            console.log("Server response:", response.data);
-
             setAlert({
                 show: true,
                 message: "KYC verification successful!",
                 type: "success"
             });
 
-            onSuccess(response.data);
+            // Navigate back after successful submission
+            setTimeout(() => {
+                navigate('/dashboard/virtual-card');
+            }, 1500);
 
         } catch (error) {
-            console.error("Submission error:", error);
-
             let errorMessage = "Submission failed. Please try again.";
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
@@ -406,16 +380,16 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
         }
     };
 
+    const goBack = () => navigate(-1);
+
     const renderDynamicFields = () => {
         if (!fieldRequirements) return null;
 
         const requirements = fieldRequirements.required_fields;
         const fields = [];
 
-        // Create a map of field names to their configuration
         const dateFields = ['date_of_birth', 'expiry_date', 'issue_date'];
 
-        // Always show date of birth if required
         if (requirements.date_of_birth === 'required') {
             fields.push(
                 <FormField
@@ -432,7 +406,6 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
             );
         }
 
-        // Show bank ID number if required
         if (requirements.bank_id_number === 'bvn required') {
             fields.push(
                 <FormField
@@ -451,20 +424,20 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
             );
         }
 
-        // Show ID type dropdown if specified in requirements
         if (requirements.id_type) {
             const idTypeOptions = Object.keys(requirements.id_type);
 
             fields.push(
                 <div key="id_type">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        ID Type
+                        ID Type <span className="text-red-500">*</span>
                     </label>
                     <select
                         name="id_type"
                         value={formData.id_type || ''}
                         onChange={handleChange}
-                        className="w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm border-gray-300"
+                        className={`w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm ${errors.id_type ? 'border-red-500' : 'border-gray-300'}`}
+                        required
                     >
                         <option value="">Select ID Type</option>
                         {idTypeOptions.map(option => (
@@ -473,187 +446,188 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
                             </option>
                         ))}
                     </select>
+                    {errors.id_type && <p className="mt-1 text-xs text-red-500">{errors.id_type}</p>}
                 </div>
             );
         }
 
-        // Show fields based on selected ID type
         if (formData.id_type && requirements.id_type && requirements.id_type[formData.id_type]) {
             const idTypeFields = requirements.id_type[formData.id_type];
 
             Object.entries(idTypeFields).forEach(([field, requirement]) => {
-                if (field === 'front_card' && requirement.includes('required')) {
-                    fields.push(
-                        <div key="frontId">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Front of ID <span className="text-red-500">*</span>
-                            </label>
-                            {frontIdPreview ? (
-                                <div className="mb-2">
-                                    <img
-                                        src={frontIdPreview}
-                                        alt="Front ID preview"
-                                        className="h-32 w-full object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFrontIdPreview('');
-                                            setFrontIdImage(null);
-                                        }}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                    >
-                                        Change Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex space-x-2">
+                if (requirement.includes('required')) {
+                    if (field === 'front_card' && formData.id_type === 'nin_number') {
+                        fields.push(
+                            <div key="frontId">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Front of NIN <span className="text-red-500">*</span>
+                                </label>
+                                {frontIdPreview ? (
+                                    <div className="mb-2">
+                                        <img
+                                            src={frontIdPreview}
+                                            alt="Front NIN preview"
+                                            className="h-32 w-full object-cover rounded-lg border"
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => startCamera('frontId')}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            onClick={() => {
+                                                setFrontIdPreview('');
+                                                setFrontIdImage(null);
+                                            }}
+                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
                                         >
-                                            Take Photo
+                                            Change Image
                                         </button>
-                                        <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                            Upload Image
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'frontId')}
-                                                className="hidden"
-                                            />
-                                        </label>
                                     </div>
-                                    {errors.frontId && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                } else if (field === 'back_card' && requirement.includes('required')) {
-                    fields.push(
-                        <div key="backId">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Back of ID <span className="text-red-500">*</span>
-                            </label>
-                            {backIdPreview ? (
-                                <div className="mb-2">
-                                    <img
-                                        src={backIdPreview}
-                                        alt="Back ID preview"
-                                        className="h-32 w-full object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setBackIdPreview('');
-                                            setBackIdImage(null);
-                                        }}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                    >
-                                        Change Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex space-x-2">
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => startCamera('frontId')}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            >
+                                                Take Photo
+                                            </button>
+                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                                Upload Image
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleFileChange(e, 'frontId')}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </div>
+                                        {errors.frontId && (
+                                            <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    } else if (field === 'passport_image' && formData.id_type === 'passport') {
+                        fields.push(
+                            <div key="passportImage">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Passport Image <span className="text-red-500">*</span>
+                                </label>
+                                {frontIdPreview ? (
+                                    <div className="mb-2">
+                                        <img
+                                            src={frontIdPreview}
+                                            alt="Passport preview"
+                                            className="h-32 w-full object-cover rounded-lg border"
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => startCamera('backId')}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            onClick={() => {
+                                                setFrontIdPreview('');
+                                                setFrontIdImage(null);
+                                            }}
+                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
                                         >
-                                            Take Photo
+                                            Change Image
                                         </button>
-                                        <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                            Upload Image
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'backId')}
-                                                className="hidden"
-                                            />
-                                        </label>
                                     </div>
-                                    {errors.backId && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.backId}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                } else if (field === 'passport_image' && requirement.includes('required')) {
-                    fields.push(
-                        <div key="passportImage">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Passport Image <span className="text-red-500">*</span>
-                            </label>
-                            {frontIdPreview ? (
-                                <div className="mb-2">
-                                    <img
-                                        src={frontIdPreview}
-                                        alt="Passport preview"
-                                        className="h-32 w-full object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFrontIdPreview('');
-                                            setFrontIdImage(null);
-                                        }}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                    >
-                                        Change Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex space-x-2">
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => startCamera('frontId')}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            >
+                                                Take Photo
+                                            </button>
+                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                                Upload Image
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleFileChange(e, 'frontId')}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </div>
+                                        {errors.passport_image && (
+                                            <p className="mt-1 text-xs text-red-500">{errors.passport_image}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    } else if (field === 'back_card' && formData.id_type === 'nin_number') {
+                        fields.push(
+                            <div key="backId">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Back of NIN <span className="text-red-500">*</span>
+                                </label>
+                                {backIdPreview ? (
+                                    <div className="mb-2">
+                                        <img
+                                            src={backIdPreview}
+                                            alt="Back NIN preview"
+                                            className="h-32 w-full object-cover rounded-lg border"
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => startCamera('frontId')}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            onClick={() => {
+                                                setBackIdPreview('');
+                                                setBackIdImage(null);
+                                            }}
+                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
                                         >
-                                            Take Photo
+                                            Change Image
                                         </button>
-                                        <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                            Upload Image
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'frontId')}
-                                                className="hidden"
-                                            />
-                                        </label>
                                     </div>
-                                    {errors.passport_image && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.passport_image}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                } else if (requirement.includes('required')) {
-                    fields.push(
-                        <FormField
-                            key={field}
-                            label={field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            name={field}
-                            value={formData[field] || ''}
-                            onChange={handleChange}
-                            placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-                            error={errors[field]}
-                            required={true}
-                            type={dateFields.includes(field) ? 'date' : 'text'}
-                        />
-                    );
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => startCamera('backId')}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            >
+                                                Take Photo
+                                            </button>
+                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                                Upload Image
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleFileChange(e, 'backId')}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </div>
+                                        {errors.backId && (
+                                            <p className="mt-1 text-xs text-red-500">{errors.backId}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    } else if (!['front_card', 'back_card', 'passport_image'].includes(field)) {
+                        fields.push(
+                            <FormField
+                                key={field}
+                                label={field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                name={field}
+                                value={formData[field] || ''}
+                                onChange={handleChange}
+                                placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                                error={errors[field]}
+                                required={true}
+                                type={dateFields.includes(field) ? 'date' : 'text'}
+                            />
+                        );
+                    }
                 }
             });
         }
 
-        // Always show selfie image if required
         if (requirements.selfie_image === 'image required') {
             fields.push(
                 <div key="selfie">
@@ -676,7 +650,7 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
                                     }}
                                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                                 >
-                                    <XMarkIcon className="h-4 w-4" />
+                                    <IoIosCloseCircle className="h-4 w-4" />
                                 </button>
                             </div>
                         </div>
@@ -709,7 +683,6 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
             );
         }
 
-        // Show bank statement if required
         if (requirements.bank_statement === 'required') {
             fields.push(
                 <div key="bankStatement">
@@ -783,6 +756,14 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
 
             <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-6">
+                    <div className="flex items-center gap-2 mb-3">
+                        <button
+                            onClick={goBack}
+                            className="bg-white text-sm flex items-center gap-1 border border-blue-100 text-blue-900 font-medium px-4 py-2.5 rounded-lg active:bg-blue-100 transition-all duration-200 shadow-sm"
+                        >
+                            <TbArrowLeft size={18} /> Back to Cards
+                        </button>
+                    </div>
                     <header className="space-y-2">
                         <h1 className="text-2xl font-semibold text-gray-800">Complete KYC Verification</h1>
                         <p className="text-gray-500">
@@ -799,7 +780,7 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
                                 "Access to all card features"
                             ].map((item, index) => (
                                 <li key={index} className="flex items-start">
-                                    <CheckCircleIcon className="h-5 w-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
+                                    <FaCheckCircle className="h-5 w-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
                                     <span>{item}</span>
                                 </li>
                             ))}
@@ -847,4 +828,4 @@ const KycModal = ({ onSuccess, onClose, cardTypeId }) => {
     );
 };
 
-export default KycModal;
+export default KycPage;

@@ -1,0 +1,7 @@
+export { default as EmailVerificationPage } from './EmailVerificationPage'
+export { default as OtpPage } from './OtpPage'
+export { default as CreateVirtualCard } from './CreateVirtualCard'
+export { default as VirtualCardList } from './VirtualCardList'
+export { default as CardDetails } from './CardDetails'
+export { default as GeneralLoader } from './GeneralLoader'
+export { default as KycPage } from './KycPage'

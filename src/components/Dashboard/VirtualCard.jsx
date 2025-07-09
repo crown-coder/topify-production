@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import CreateVirtualCard from './small-components/CreateVirtualCard';
-import VirtualCards from './small-components/VirtualCards';
-import KycModal from './small-components/KycModal';
-import OtpModal from './small-components/OtpModal';
 import { useModal } from '../ModalContext';
 import Cookies from 'js-cookie';
 import GeneralLoader from './small-components/GeneralLoader';
@@ -72,9 +68,6 @@ const VirtualCard = () => {
         setOtpVerified(true);
         setShowOtpModal(false);
     }, []);
-
-
-
 
     const sendOtpToEmail = useCallback(async () => {
         if (isSendingOtp || otpSentRef.current || !user?.email) return;

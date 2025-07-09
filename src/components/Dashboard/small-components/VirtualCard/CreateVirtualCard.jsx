@@ -1,9 +1,24 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { CheckCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
-import AlertBox from './AlertBox';
+import { FaCheckCircle } from "react-icons/fa";
+import { IoIosCloseCircle } from "react-icons/io";
+import AlertBox from '../AlertBox';
 import { TiDocumentText } from "react-icons/ti";
+import { useNavigate } from 'react-router-dom';
+import { CheckCircleIcon } from '@heroicons/react/20/solid';
+import { FaCircleCheck } from "react-icons/fa6";
+import { IoClose } from "react-icons/io5";
+const getCardGradient = (index) => {
+    const gradients = [
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)'
+    ];
+    return gradients[index % gradients.length];
+};
 
 const FormField = ({ label, name, value, onChange, placeholder, error, type = 'text', required = true, ...props }) => (
     <div>
@@ -55,6 +70,7 @@ const CameraModal = ({ onCapture, onCancel, videoRef, canvasRef }) => (
 );
 
 const CreateVirtualCard = ({ onCardCreated }) => {
+    const navigate = useNavigate();
     const xsrfToken = Cookies.get('XSRF-TOKEN');
     const [alert, setAlert] = useState({
         show: false,
@@ -94,6 +110,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             const allCards = response.data.data || [];
             const activeCards = allCards.filter(card => card.status === 'active');
             setCardsAvailable(activeCards);
+            console.log(activeCards)
         } catch (error) {
             console.error("Error fetching available cards:", error);
             setAlert({
@@ -119,9 +136,8 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             const initialFormData = {};
             const requirements = response.data.data.required_fields;
 
-            // Initialize basic fields
             Object.keys(requirements).forEach(field => {
-                if (field !== 'id_type' && !['selfie_image', 'front_card', 'back_card', 'passport_image', 'bank_statement'].includes(field)) {
+                if (!['selfie_image', 'front_card', 'back_card', 'passport_image', 'bank_statement'].includes(field)) {
                     initialFormData[field] = '';
                 }
             });
@@ -281,43 +297,42 @@ const CreateVirtualCard = ({ onCardCreated }) => {
         const newErrors = {};
         const requirements = fieldRequirements.required_fields;
 
-        // Validate required fields
         if (requirements.date_of_birth === 'required' && !formData.date_of_birth) {
             newErrors.date_of_birth = 'Date of birth is required';
         }
 
-        // Validate bank ID number if required
         if (requirements.bank_id_number === 'bvn required' && !formData.bank_id_number) {
             newErrors.bank_id_number = 'Bank verification number is required';
         }
 
-        // Validate ID type specific fields
-        if (formData.id_type && requirements.id_type) {
-            const idTypeRequirements = requirements.id_type[formData.id_type];
+        if (requirements.id_type) {
+            if (!formData.id_type) {
+                newErrors.id_type = 'ID type is required';
+            } else {
+                const idTypeRequirements = requirements.id_type[formData.id_type];
 
-            if (idTypeRequirements) {
-                Object.entries(idTypeRequirements).forEach(([field, requirement]) => {
-                    if (requirement.includes('required')) {
-                        if (field === 'front_card' && !frontIdImage) {
-                            newErrors.frontId = 'Front of ID is required';
-                        } else if (field === 'back_card' && !backIdImage) {
-                            newErrors.backId = 'Back of ID is required';
-                        } else if (field === 'passport_image' && !frontIdImage) {
-                            newErrors.passport_image = 'Passport image is required';
-                        } else if (!formData[field]) {
-                            newErrors[field] = `${field.replace(/_/g, ' ')} is required`;
+                if (idTypeRequirements) {
+                    Object.entries(idTypeRequirements).forEach(([field, requirement]) => {
+                        if (requirement.includes('required')) {
+                            if (field === 'front_card' && formData.id_type === 'nin' && !frontIdImage) {
+                                newErrors.frontId = 'Front of NIN is required';
+                            } else if (field === 'passport_image' && formData.id_type === 'passport' && !frontIdImage) {
+                                newErrors.passport_image = 'Passport image is required';
+                            } else if (field === 'back_card' && formData.id_type === 'nin' && !backIdImage) {
+                                newErrors.backId = 'Back of NIN is required';
+                            } else if (!['front_card', 'back_card', 'passport_image'].includes(field) && !formData[field]) {
+                                newErrors[field] = `${field.replace(/_/g, ' ')} is required`;
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         }
 
-        // Validate selfie image
         if (requirements.selfie_image === 'image required' && !selfieImage) {
             newErrors.selfie = 'Selfie image is required';
         }
 
-        // Validate bank statement if required
         if (requirements.bank_statement === 'required' && !bankStatement) {
             newErrors.bank_statement = 'Bank statement is required';
         }
@@ -334,55 +349,33 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             return;
         }
 
-        console.log("🟢 Starting form submission process");
-
-        // Log all data that will be submitted
-        console.group("📋 SUBMISSION DATA:");
-        console.log("Card Type ID:", selectedCard?.id);
-        console.log("Form Fields:", JSON.parse(JSON.stringify(formData)));
-        console.log("Selfie Image:", selfieImage ? `File (${selfieImage.name}, ${selfieImage.size} bytes)` : "None");
-        console.log("Front ID Image:", frontIdImage ? `File (${frontIdImage.name}, ${frontIdImage.size} bytes)` : "None");
-        console.log("Back ID Image:", backIdImage ? `File (${backIdImage.name}, ${backIdImage.size} bytes)` : "None");
-        console.log("Bank Statement:", bankStatement ? `File (${bankStatement.name}, ${bankStatement.size} bytes)` : "None");
-        console.groupEnd();
-
         setIsSubmitting(true);
 
         try {
             const formDataToSend = new FormData();
             formDataToSend.append('card_type_id', selectedCard.id);
 
-            // Add all form fields
             Object.entries(formData).forEach(([key, value]) => {
                 if (value !== '' && value !== null && value !== undefined) {
                     formDataToSend.append(key, value);
                 }
             });
 
-            // Add files
             if (selfieImage) formDataToSend.append('selfie_image', selfieImage);
-            if (frontIdImage) {
-                if (formData.id_type === 'nin') {
-                    formDataToSend.append('front_card', frontIdImage);
-                } else if (formData.id_type === 'passport') {
-                    formDataToSend.append('passport_image', frontIdImage);
-                } else {
-                    formDataToSend.append('front_card', frontIdImage);
-                }
-            }
-            if (backIdImage) formDataToSend.append('back_card', backIdImage);
-            if (bankStatement) formDataToSend.append('bank_statement', bankStatement);
 
-            // Log final FormData contents
-            console.group("📦 Final FormData Contents:");
-            for (let [key, value] of formDataToSend.entries()) {
-                if (value instanceof File) {
-                    console.log(`${key}:`, value.name, `(File, ${value.size} bytes)`);
-                } else {
-                    console.log(`${key}:`, value);
+            if (frontIdImage) {
+                if (formData.id_type === 'passport') {
+                    formDataToSend.append('passport_image', frontIdImage);
+                } else if (formData.id_type === 'nin') {
+                    formDataToSend.append('front_card', frontIdImage);
                 }
             }
-            console.groupEnd();
+
+            if (backIdImage && formData.id_type === 'nin') {
+                formDataToSend.append('back_card', backIdImage);
+            }
+
+            if (bankStatement) formDataToSend.append('bank_statement', bankStatement);
 
             const response = await axios.post(
                 `/api/virtual-cards/create-holder`,
@@ -396,19 +389,23 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                 }
             );
 
-            console.log("Server response:", response.data);
-
             setAlert({
                 show: true,
                 message: "Virtual Card User Created Successfully!",
                 type: "success"
             });
 
-            onCardCreated(response.data);
+            // Call the parent callback if provided
+            if (onCardCreated) {
+                onCardCreated(response.data);
+            }
+
+            // Redirect to virtual card list after 2 seconds
+            setTimeout(() => {
+                navigate('/dashboard/virtual-card/list');
+            }, 2000);
 
         } catch (error) {
-            console.error("Submission error:", error);
-
             let errorMessage = "Submission failed. Please try again.";
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
@@ -432,10 +429,8 @@ const CreateVirtualCard = ({ onCardCreated }) => {
         const requirements = fieldRequirements.required_fields;
         const fields = [];
 
-        // Create a map of field names to their configuration
         const dateFields = ['date_of_birth', 'expiry_date', 'issue_date'];
 
-        // Always show date of birth if required
         if (requirements.date_of_birth === 'required') {
             fields.push(
                 <FormField
@@ -452,7 +447,6 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             );
         }
 
-        // Show bank ID number if required
         if (requirements.bank_id_number === 'bvn required') {
             fields.push(
                 <FormField
@@ -471,20 +465,20 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             );
         }
 
-        // Show ID type dropdown if specified in requirements
         if (requirements.id_type) {
             const idTypeOptions = Object.keys(requirements.id_type);
 
             fields.push(
                 <div key="id_type">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        ID Type
+                        ID Type <span className="text-red-500">*</span>
                     </label>
                     <select
                         name="id_type"
                         value={formData.id_type || ''}
                         onChange={handleChange}
-                        className="w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm border-gray-300"
+                        className={`w-full px-3 py-2.5 rounded-lg border text-gray-600 text-sm ${errors.id_type ? 'border-red-500' : 'border-gray-300'}`}
+                        required
                     >
                         <option value="">Select ID Type</option>
                         {idTypeOptions.map(option => (
@@ -493,187 +487,188 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                             </option>
                         ))}
                     </select>
+                    {errors.id_type && <p className="mt-1 text-xs text-red-500">{errors.id_type}</p>}
                 </div>
             );
         }
 
-        // Show fields based on selected ID type
         if (formData.id_type && requirements.id_type && requirements.id_type[formData.id_type]) {
             const idTypeFields = requirements.id_type[formData.id_type];
 
             Object.entries(idTypeFields).forEach(([field, requirement]) => {
-                if (field === 'front_card' && requirement.includes('required')) {
-                    fields.push(
-                        <div key="frontId">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Front of ID <span className="text-red-500">*</span>
-                            </label>
-                            {frontIdPreview ? (
-                                <div className="mb-2">
-                                    <img
-                                        src={frontIdPreview}
-                                        alt="Front ID preview"
-                                        className="h-32 w-full object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFrontIdPreview('');
-                                            setFrontIdImage(null);
-                                        }}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                    >
-                                        Change Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex space-x-2">
+                if (requirement.includes('required')) {
+                    if (field === 'front_card' && formData.id_type === 'nin') {
+                        fields.push(
+                            <div key="frontId">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Front of NIN <span className="text-red-500">*</span>
+                                </label>
+                                {frontIdPreview ? (
+                                    <div className="mb-2">
+                                        <img
+                                            src={frontIdPreview}
+                                            alt="Front NIN preview"
+                                            className="h-32 w-full object-cover rounded-lg border"
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => startCamera('frontId')}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            onClick={() => {
+                                                setFrontIdPreview('');
+                                                setFrontIdImage(null);
+                                            }}
+                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
                                         >
-                                            Take Photo
+                                            Change Image
                                         </button>
-                                        <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                            Upload Image
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'frontId')}
-                                                className="hidden"
-                                            />
-                                        </label>
                                     </div>
-                                    {errors.frontId && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                } else if (field === 'back_card' && requirement.includes('required')) {
-                    fields.push(
-                        <div key="backId">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Back of ID <span className="text-red-500">*</span>
-                            </label>
-                            {backIdPreview ? (
-                                <div className="mb-2">
-                                    <img
-                                        src={backIdPreview}
-                                        alt="Back ID preview"
-                                        className="h-32 w-full object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setBackIdPreview('');
-                                            setBackIdImage(null);
-                                        }}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                    >
-                                        Change Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex space-x-2">
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => startCamera('frontId')}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            >
+                                                Take Photo
+                                            </button>
+                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                                Upload Image
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleFileChange(e, 'frontId')}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </div>
+                                        {errors.frontId && (
+                                            <p className="mt-1 text-xs text-red-500">{errors.frontId}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    } else if (field === 'passport_image' && formData.id_type === 'passport') {
+                        fields.push(
+                            <div key="passportImage">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Passport Image <span className="text-red-500">*</span>
+                                </label>
+                                {frontIdPreview ? (
+                                    <div className="mb-2">
+                                        <img
+                                            src={frontIdPreview}
+                                            alt="Passport preview"
+                                            className="h-32 w-full object-cover rounded-lg border"
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => startCamera('backId')}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            onClick={() => {
+                                                setFrontIdPreview('');
+                                                setFrontIdImage(null);
+                                            }}
+                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
                                         >
-                                            Take Photo
+                                            Change Image
                                         </button>
-                                        <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                            Upload Image
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'backId')}
-                                                className="hidden"
-                                            />
-                                        </label>
                                     </div>
-                                    {errors.backId && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.backId}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                } else if (field === 'passport_image' && requirement.includes('required')) {
-                    fields.push(
-                        <div key="passportImage">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Passport Image <span className="text-red-500">*</span>
-                            </label>
-                            {frontIdPreview ? (
-                                <div className="mb-2">
-                                    <img
-                                        src={frontIdPreview}
-                                        alt="Passport preview"
-                                        className="h-32 w-full object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFrontIdPreview('');
-                                            setFrontIdImage(null);
-                                        }}
-                                        className="mt-2 text-sm text-red-600 hover:text-red-800"
-                                    >
-                                        Change Image
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex space-x-2">
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => startCamera('frontId')}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            >
+                                                Take Photo
+                                            </button>
+                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                                Upload Image
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleFileChange(e, 'frontId')}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </div>
+                                        {errors.passport_image && (
+                                            <p className="mt-1 text-xs text-red-500">{errors.passport_image}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    } else if (field === 'back_card' && formData.id_type === 'nin') {
+                        fields.push(
+                            <div key="backId">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Back of NIN <span className="text-red-500">*</span>
+                                </label>
+                                {backIdPreview ? (
+                                    <div className="mb-2">
+                                        <img
+                                            src={backIdPreview}
+                                            alt="Back NIN preview"
+                                            className="h-32 w-full object-cover rounded-lg border"
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => startCamera('frontId')}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            onClick={() => {
+                                                setBackIdPreview('');
+                                                setBackIdImage(null);
+                                            }}
+                                            className="mt-2 text-sm text-red-600 hover:text-red-800"
                                         >
-                                            Take Photo
+                                            Change Image
                                         </button>
-                                        <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
-                                            Upload Image
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={(e) => handleFileChange(e, 'frontId')}
-                                                className="hidden"
-                                            />
-                                        </label>
                                     </div>
-                                    {errors.passport_image && (
-                                        <p className="mt-1 text-xs text-red-500">{errors.passport_image}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                } else if (requirement.includes('required')) {
-                    fields.push(
-                        <FormField
-                            key={field}
-                            label={field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            name={field}
-                            value={formData[field] || ''}
-                            onChange={handleChange}
-                            placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
-                            error={errors[field]}
-                            required={true}
-                            type={dateFields.includes(field) ? 'date' : 'text'}
-                        />
-                    );
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => startCamera('backId')}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                                            >
+                                                Take Photo
+                                            </button>
+                                            <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+                                                Upload Image
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleFileChange(e, 'backId')}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        </div>
+                                        {errors.backId && (
+                                            <p className="mt-1 text-xs text-red-500">{errors.backId}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    } else if (!['front_card', 'back_card', 'passport_image'].includes(field)) {
+                        fields.push(
+                            <FormField
+                                key={field}
+                                label={field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                name={field}
+                                value={formData[field] || ''}
+                                onChange={handleChange}
+                                placeholder={`Enter your ${field.replace(/_/g, ' ')}`}
+                                error={errors[field]}
+                                required={true}
+                                type={dateFields.includes(field) ? 'date' : 'text'}
+                            />
+                        );
+                    }
                 }
             });
         }
 
-        // Always show selfie image if required
         if (requirements.selfie_image === 'image required') {
             fields.push(
                 <div key="selfie">
@@ -696,7 +691,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                                     }}
                                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                                 >
-                                    <XMarkIcon className="h-4 w-4" />
+                                    <IoIosCloseCircle className="h-4 w-4" />
                                 </button>
                             </div>
                         </div>
@@ -729,7 +724,6 @@ const CreateVirtualCard = ({ onCardCreated }) => {
             );
         }
 
-        // Show bank statement if required
         if (requirements.bank_statement === 'required') {
             fields.push(
                 <div key="bankStatement">
@@ -787,33 +781,135 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                 />
             )}
 
-            <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                <div className="space-y-3">
                     <header className="space-y-2">
-                        <h1 className="text-2xl font-semibold text-gray-800">Create Your Virtual Card</h1>
-                        <p className="text-gray-500">
+                        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Create Your Virtual Card</h1>
+                        {/* <p className="text-gray-500">
                             Securely shop online, pay bills, and manage subscriptions with our virtual cards.
-                        </p>
+                        </p> */}
                     </header>
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-medium text-gray-700">Select Card Type</h3>
+                        {errors.card_type_id && (
+                            <p className="mt-1 text-xs text-red-500">{errors.card_type_id}</p>
+                        )}
 
-                    <div className="bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-                        <h3 className="font-medium text-blue-700 mb-3">Why choose a virtual card?</h3>
-                        <ul className="text-sm text-gray-600 space-y-2">
-                            {[
-                                "Secure online payments without exposing your main account",
-                                "Set spending limits and expiration dates",
-                                "Instant issuance with no physical card needed"
-                            ].map((item, index) => (
-                                <li key={index} className="flex items-start">
-                                    <CheckCircleIcon className="h-5 w-5 text-blue-400 mr-2 mt-0.5 flex-shrink-0" />
-                                    <span>{item}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                        <div className="relative">
+                            {/* Scrollable card container */}
+                            <div className="flex space-x-4 pb-6 overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar">
+                                {cardsAvailable.map((card, index) => (
+                                    <div
+                                        key={card.id}
+                                        id={`card-${card.id}`}
+                                        className={`flex-shrink-0 w-64 h-36 rounded-2xl cursor-pointer transition-all shadow-lg ${selectedCard?.id === card.id ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200 hover:ring-gray-300'}`}
+                                        onClick={() => handleCardSelect(card)}
+                                        style={{
+                                            scrollSnapAlign: 'start',
+                                            background: getCardGradient(index),
+                                            transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                                        }}
+                                    >
+                                        <div className="h-full p-4 flex flex-col justify-between text-white">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="text-xs opacity-80">Virtual Card</p>
+                                                    <h3 className="font-bold text-lg">{card.name}</h3>
+                                                </div>
+                                                {selectedCard?.id === card.id && (
+                                                    <CheckCircleIcon className="h-5 w-5 text-white" />
+                                                )}
+                                            </div>
+
+                                            <div className="mt-2">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <p className="text-sm font-medium tracking-wider">•••• •••• •••• {card.last4 || '1234'}</p>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs mt-2">
+                                                    <div>
+                                                        <p className="opacity-70">Limit</p>
+                                                        <p className="font-medium">{card.currency} {card.limit}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="opacity-70">Fee</p>
+                                                        <p className="font-medium">{card.fee !== "0.00" ? card.fee : 'None'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Scroll indicator dots */}
+                            <div className="flex justify-center space-x-2 mt-3">
+                                {cardsAvailable.map((card, index) => (
+                                    <div
+                                        key={card.id}
+                                        className={`w-2 h-2 rounded-full transition-colors ${selectedCard?.id === card.id ? 'bg-blue-500' : 'bg-gray-300'}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        {selectedCard ? (
+                            <div className="mt-4 space-y-4">
+                                {/* Features Section */}
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <h3 className="font-medium mb-3 text-gray-800">Card Features:</h3>
+                                    {selectedCard.features ? (
+                                        <ul className="space-y-2 max-h-[150px] overflow-y-auto">
+                                            {JSON.parse(selectedCard.features).map((feature, i) => (
+                                                <li key={i} className="flex items-start">
+                                                    {feature.supported === 1 ? (
+                                                        <FaCircleCheck className="h-4 w-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" />
+                                                    ) : (
+                                                        <IoClose className="h-4 w-4 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+                                                    )}
+                                                    <span className="text-gray-700 text-sm">{feature.name}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-gray-500 text-sm">No features listed for this card</p>
+                                    )}
+                                </div>
+
+                                {/* Terms Section */}
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <h3 className="font-medium mb-3 text-gray-800">Terms & Conditions:</h3>
+                                    {selectedCard.terms ? (
+                                        <ul className="space-y-2 max-h-[150px] overflow-y-auto">
+                                            {JSON.parse(selectedCard.terms).map((term, i) => (
+                                                <li key={i} className="flex items-start">
+                                                    <span className="text-gray-700 text-sm">• {term}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-gray-500 text-sm">No terms listed for this card</p>
+                                    )}
+                                </div>
+
+                                {/* Fee Section */}
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <p className="text-sm text-gray-600">
+                                        Card Creation Fee: <span className="font-medium">{selectedCard.fee} {selectedCard.currency}</span>
+                                    </p>
+                                    {selectedCard.currency === "USD" && selectedCard.provider === "graph" && (
+                                        <p className="mt-2 text-sm text-red-500">Note: Bank Statement is Required for this card type</p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-sm py-4">Select a card to view details</p>
+                        )}
+                    </section>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                     <section>
                         <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
                             Card Application
@@ -823,41 +919,6 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                                 ? `Creating ${selectedCard.name} (${selectedCard.currency})`
                                 : "Select a card type to begin"}
                         </p>
-                    </section>
-
-                    <section className="space-y-1">
-                        <h3 className="text-sm font-medium text-gray-700">Card Type</h3>
-                        {errors.card_type_id && (
-                            <p className="mt-1 text-xs text-red-500">{errors.card_type_id}</p>
-                        )}
-                        <div className="grid grid-cols-2 gap-3 mt-3">
-                            {cardsAvailable.map(card => (
-                                <div
-                                    key={card.id}
-                                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedCard?.id === card.id ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}
-                                    onClick={() => handleCardSelect(card)}
-                                >
-                                    <label className="flex items-center space-x-2">
-                                        <input
-                                            type="radio"
-                                            name="card_type_id"
-                                            value={card.id}
-                                            checked={selectedCard?.id === card.id}
-                                            className="form-radio h-4 w-4 text-blue-600"
-                                            onChange={() => { }}
-                                            required
-                                        />
-                                        <div>
-                                            <span className="block text-sm font-medium text-gray-800">{card.name}</span>
-                                            <span className="block text-xs text-gray-500">
-                                                {card.currency} {card.limit} Limit
-                                                {card.fee !== "0.00" && ` (Fee: ${card.fee})`}
-                                            </span>
-                                        </div>
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
                     </section>
 
                     {selectedCard && (

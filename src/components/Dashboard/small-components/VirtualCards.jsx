@@ -11,6 +11,7 @@ import CardSelectionModal from './CardSelectionModal';
 import KycModal from './KycModal';
 import Cookies from 'js-cookie';
 import GeneralLoader from './GeneralLoader';
+import { PiEmptyLight } from "react-icons/pi";
 
 const VirtualCards = () => {
     const [cardType, setCardType] = useState('Naira');
@@ -162,11 +163,12 @@ const VirtualCards = () => {
     const handleCardSelection = async (selectedCard) => {
         setSelectedCard(selectedCard);
         const provider = selectedCard.provider;
-        const cardholderId = await fetchCardholderId(provider);
-        setCardholderId(cardholderId);
 
-        if (cardholderId) {
-            try {
+        try {
+            const cardholderId = await fetchCardholderId(provider);
+            setCardholderId(cardholderId);
+
+            if (cardholderId) {
                 const cards = await fetchCards(provider);
                 setCards(cards);
 
@@ -181,11 +183,11 @@ const VirtualCards = () => {
                         selectedCard={selectedCard}
                     />
                 );
-            } catch (err) {
-                setError(err.message || 'Failed to load cards. Please try again.');
+            } else {
+                setShowKycModal(true);
             }
-        } else {
-            setShowKycModal(true);
+        } catch (err) {
+            setError(err.message || 'Failed to load cards. Please try again.');
         }
     };
 
@@ -331,8 +333,8 @@ const VirtualCards = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
             ) : cards.length === 0 ? (
-                <div className="text-center py-10">
-                    <img src="/empty-cards.svg" className="w-40 mx-auto mb-4" alt="No cards" />
+                <div className="text-center flex flex-col items-center py-10">
+                    <PiEmptyLight className='text-4xl mb-4 text-orange-400' />
                     <p className="text-gray-500 mb-2">You don't have any virtual cards yet</p>
                     <p className="text-sm text-gray-400 mb-4">
                         Virtual cards help you shop online securely

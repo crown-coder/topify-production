@@ -21,6 +21,7 @@ import {
     VirtualCard,
     Settings
 } from '../components/Dashboard/index.js'
+import VirtualCardRouter from '../components/Dashboard/small-components/VirtualCardRouter.jsx'
 
 import Receipt from '../components/Dashboard/small-components/Receipt.jsx'
 import WalletTable from '../components/Dashboard/small-components/walletTable.jsx'
@@ -31,8 +32,6 @@ import ElectricBillTable from '../components/Dashboard/small-components/Electric
 import ResultCheckerTable from '../components/Dashboard/small-components/ResultCheckerTable.jsx'
 
 import TvBillTable from '../components/Dashboard/small-components/TvBillTable.jsx'
-
-import CardDetails from '../components/Dashboard/small-components/CardDetails.jsx'
 
 import ProfileSection from '../components/Dashboard/small-components/ProfileSection'
 import ChangeBankDetails from '../components/Dashboard/small-components/ChangeBankDetails'
@@ -119,7 +118,7 @@ const Dashboard = () => {
                         <Route path='pay-tv-bill' element={<PayTvBill />} />
                         <Route path='result-checker' element={<ResultChecker />} />
                         <Route path='referral-rewards' element={<ReferralRewards />} />
-                        <Route path='virtual-card' element={<VirtualCard />} />
+                        <Route path="virtual-card/*" element={<VirtualCardRouter />} />
                         <Route path='settings' element={<Settings />} />
                         <Route path='logout' element={<Settings />} />
 
@@ -133,7 +132,7 @@ const Dashboard = () => {
 
                         <Route path='pay-tv-bill/tv-bill-table' element={<TvBillTable />} />
 
-                        <Route path='virtual-card/card-details/:cardId/:currency' element={<CardDetails />} />
+                        {/* <Route path='virtual-card/card-details/:cardId/:currency' element={<CardDetails />} /> */}
 
                         {/* Settings routes */}
                         <Route path='settings/profile' element={<ProfileSection />} />

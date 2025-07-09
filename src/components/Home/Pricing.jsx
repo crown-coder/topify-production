@@ -15,16 +15,16 @@ const Pricing = () => {
     return (
         <section className='w-full min-h-dvh bg-[#F8FBF8] flex flex-col gap-14 items-center p-20 max-lg:px-2 relative'>
             <h1 className='text-black text-4xl'>Pricings and Plans</h1>
-            <img src={Cat} className='absolute top-0 w-[500px] opacity-20' />
-            <img src={FirstStartFish} className='absolute w-[150px] top-24 left-0' />
-            <img src={FourthStartFish} className='absolute w-[200px] top-0 right-0' />
-            <img src={ThirdStartFish} className='absolute w-[200px] bottom-0 left-28' />
-            <img src={SecondStartFish} className='absolute w-[150px] bottom-20 right-0' />
+            <img src={Cat} className='absolute top-0 w-[500px] opacity-20' alt="Cat decoration" />
+            <img src={FirstStartFish} className='absolute w-[150px] top-24 left-0' alt="Star fish decoration" />
+            <img src={FourthStartFish} className='absolute w-[200px] top-0 right-0' alt="Star fish decoration" />
+            <img src={ThirdStartFish} className='absolute w-[200px] bottom-0 left-28' alt="Star fish decoration" />
+            <img src={SecondStartFish} className='absolute w-[150px] bottom-20 right-0' alt="Star fish decoration" />
             <div className='max-lg:w-[90%] grid grid-cols-4 max-lg:grid-cols-1 gap-4'>
-                <PricingCard icon={MtnIcon} />
-                <PricingCard icon={AirtelIcon} />
-                <PricingCard icon={GloIcon} />
-                <PricingCard icon={NineMobileIcon} />
+                <PricingCard icon={MtnIcon} networkCode="mtn" />
+                <PricingCard icon={AirtelIcon} networkCode="airtel" />
+                <PricingCard icon={GloIcon} networkCode="glo" />
+                <PricingCard icon={NineMobileIcon} networkCode="9mobile" />
             </div>
         </section>
     )

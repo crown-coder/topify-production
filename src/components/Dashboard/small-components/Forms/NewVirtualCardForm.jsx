@@ -40,8 +40,7 @@ const NewVirtualCardForm = ({ onCreateCard, closeModal, selectedCard }) => {
         setLoading(true);
         try {
             const response = await axios.post(`/api/getExchangeRates`);
-            setExchangeRate(response.data.data.app_rate);
-            // console.log('Exchange Rate:', response.data.data.app_rate);
+            setExchangeRate(response.data.graph.sell_rate);
         } catch (err) {
             console.error('Error fetching exchange rate:', err);
         } finally {

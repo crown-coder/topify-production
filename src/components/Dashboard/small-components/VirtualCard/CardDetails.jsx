@@ -1,118 +1,91 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { TbArrowLeft } from 'react-icons/tb';
-import { FiCopy } from 'react-icons/fi';
-import Logo from '../../../assets/logo.png';
-import { useModal } from '../../ModalContext.jsx';
-import CardLayout from './Cards/CardLayout.jsx';
-import { PiWarningCircleThin } from "react-icons/pi";
-import CardFundingForm from './Forms/CardFundingForm.jsx';
-import CardWithdrawalForm from './Forms/CardWithdrawalForm.jsx';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { motion } from 'framer-motion';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
+import { IoInformationCircleOutline } from "react-icons/io5";
 import {
     FaMoneyBillWave,
     FaMoneyCheckAlt,
     FaSnowflake,
-    FaTrashAlt
+    FaTrashAlt,
 } from 'react-icons/fa';
-import MetalPhoto from '../../../assets/metal.png';
-import GeneralLoader from './GeneralLoader.jsx';
-import AlertBox from './AlertBox.jsx';
-import CardTransactionTable from './CardTransactionTable.jsx';
+import { TbArrowLeft } from 'react-icons/tb';
+import { FiCopy } from 'react-icons/fi';
+import { PiWarningCircleThin } from 'react-icons/pi';
+
+import Logo from '../../../../assets/logo.png';
+import MetalPhoto from '../../../../assets/metal.png';
+
+import { useModal } from '../../../ModalContext';
+import CardLayout from '../Cards/CardLayout';
+import CardFundingForm from '../Forms/CardFundingForm';
+import CardWithdrawalForm from '../Forms/CardWithdrawalForm';
+import AlertBox from '../AlertBox';
+import CardTransactionTable from '../CardTransactionTable';
+
+const fetchCardDetails = async ({ queryKey }) => {
+    const [_key, cardId] = queryKey;
+    const xsrfToken = Cookies.get('XSRF-TOKEN');
+    const config = {
+        headers: { 'X-XSRF-TOKEN': xsrfToken },
+        withCredentials: true,
+    };
+
+    const allCardsRes = await axios.get('/api/Allvirtual-cards', config);
+    const card = allCardsRes.data.data.find((c) => c.card_id === cardId);
+    if (!card) throw new Error('Card not found');
+
+    console.log("This is the card", card)
+
+    const detailRes = await axios.get(`/api/virtual-cards/${card.id}/details`, config);
+    const detail = detailRes.data;
+
+    return {
+        ...detail,
+        id: card.id,
+        provider: card.provider,
+        expiry: `${detail.expiry_month}/${detail.expiry_year.toString().slice(-2)}`
+    };
+};
 
 const CardDetails = () => {
     const { cardId, currency } = useParams();
-    const [cardCurrency, setCardCurrency] = useState('');
-    const location = useLocation();
     const navigate = useNavigate();
     const { openModal, closeModal } = useModal();
-    const [card, setCard] = useState(location.state || null);
+
     const [copiedField, setCopiedField] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [currentCardId, setCurrentCardId] = useState(null);
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
+    const [loading, setLoading] = useState(false);
     const [alertType, setAlertType] = useState('success');
-    const [cardProvider, setCardProvider] = useState('');
 
-    const fetchCard = async () => {
-        try {
-            setLoading(true);
-            const xsrfToken = Cookies.get('XSRF-TOKEN');
-            const config = {
-                headers: {
-                    'X-XSRF-TOKEN': xsrfToken
-                },
-                withCredentials: true
-            };
-
-            const allCardsResponse = await axios.get(`/api/Allvirtual-cards`, config);
-            const allCards = allCardsResponse.data.data;
-
-            const matchingCard = allCards.find(card => card.card_id === cardId);
-
-            console.log("The matching card Data", matchingCard)
-            setCardProvider(matchingCard.provider)
-
-            if (!matchingCard) {
-                setError('Card not found');
-                return;
-            }
-
-            setCurrentCardId(matchingCard.id);
-
-            const cardDetailsResponse = await axios.get(`/api/virtual-cards/${matchingCard.id}/details`, config);
-            const cardDetails = cardDetailsResponse.data;
-
-            const updatedCard = {
-                ...cardDetails,
-                expiry: `${cardDetails.expiry_month}/${cardDetails.expiry_year.toString().slice(-2)}`
-            };
-
-            setCard(updatedCard);
-            setCardCurrency(updatedCard.card_currency)
-        } catch (err) {
-            setError('Failed to load card');
-            console.error('Error fetching card:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchCard();
-    }, [cardId]);
+    const { data: card, isLoading, isError, error, refetch } = useQuery({
+        queryKey: ['cardDetails', cardId],
+        queryFn: fetchCardDetails,
+    });
 
     const copyToClipboard = (text, field) => {
         navigator.clipboard.writeText(text).then(() => {
             setCopiedField(field);
             setTimeout(() => setCopiedField(null), 2000);
-        }).catch(err => {
-            console.error('Failed to copy:', err);
         });
     };
 
-    const updateCardStatus = (newStatus) => {
-        setCard(prev => ({
-            ...prev,
-            is_active: newStatus
-        }));
-    };
+    const goBack = () => navigate(-1);
 
-    const handleFunding = () => {
-        if (!card) return;
+    const openFundingModal = () => {
         openModal(
             <CardLayout cardTitle="Funding Card" closeModal={closeModal}>
                 <CardFundingForm
                     cardId={card.card_id}
                     currency={card.card_currency}
-                    cardProvider={cardProvider}
+                    cardProvider={card.provider}
                     onSuccess={() => {
-                        fetchCard();
+                        refetch();
                         closeModal();
                     }}
                 />
@@ -120,18 +93,16 @@ const CardDetails = () => {
         );
     };
 
-    const handleWithdraw = () => {
-        if (!card) return;
+    const openWithdrawalModal = () => {
         openModal(
             <CardLayout cardTitle="Withdraw Funds" closeModal={closeModal}>
                 <CardWithdrawalForm
-                    closeModal={closeModal}
-                    currentCardId={currentCardId}
+                    currentCardId={card.id}
                     cardId={card.card_id}
                     cardCurrency={card.card_currency}
-                    cardProvider={cardProvider}
+                    cardProvider={card.provider}
                     onSuccess={() => {
-                        fetchCard();
+                        refetch();
                         closeModal();
                     }}
                 />
@@ -140,13 +111,13 @@ const CardDetails = () => {
     };
 
     const handleFreezeToggle = async () => {
-        setIsLoading(true);
+        setLoading(true);
         try {
             const xsrfToken = Cookies.get('XSRF-TOKEN');
             const newStatus = card.is_active ? 1 : 0;
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/virtual-cards/toggle-freeze`,
+                `/api/virtual-cards/toggle-freeze`,
                 {
                     is_active: newStatus,
                     card_id: card.card_id,
@@ -177,7 +148,7 @@ const CardDetails = () => {
             setAlertMessage(error.response?.data?.message || `Failed to ${card.is_active ? 'freeze' : 'unfreeze'} card`);
             setShowAlert(true);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
@@ -257,29 +228,32 @@ const CardDetails = () => {
         );
     };
 
-    const goBack = () => navigate(-1);
-
-    if (loading) return (
-        <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative my-2 p-5 rounded-xl w-full bg-white"
-        >
-            <GeneralLoader />
+    const renderSkeleton = () => (
+        <motion.div className="p-5 bg-white rounded-xl">
+            <div className="flex justify-between items-center mb-4">
+                <Skeleton width={120} height={20} />
+                <Skeleton width={100} height={30} />
+            </div>
+            <div className="flex gap-4 max-lg:flex-col">
+                <div className="w-[420px] max-lg:w-full p-4 rounded-xl bg-gray-200">
+                    <Skeleton height={40} />
+                    <Skeleton height={30} count={3} className="my-2" />
+                </div>
+                <div className="flex-1 space-y-4">
+                    <Skeleton height={40} />
+                    <Skeleton height={80} count={2} />
+                    <Skeleton height={200} />
+                </div>
+            </div>
         </motion.div>
     );
 
-    if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
-    if (!card) return <div className="text-center py-10 text-gray-400">No card data available</div>;
+    if (isLoading) return renderSkeleton();
+    if (isError) return <div className="text-center text-red-500 py-10">{error?.message}</div>;
+    if (!card) return <div className="text-center text-gray-400 py-10">No card data available</div>;
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="p-2"
-        >
+        <motion.div className="p-2">
             {showAlert && (
                 <AlertBox
                     message={alertMessage}
@@ -292,12 +266,14 @@ const CardDetails = () => {
             <div className="flex items-center gap-2 mb-3">
                 <button
                     onClick={goBack}
-                    className="bg-white text-sm flex items-center gap-1 border border-blue-100 text-blue-900 font-medium px-4 py-2.5 rounded-lg active:bg-blue-100 transition-all duration-200 shadow-sm"
+                    className="text-sm flex items-center gap-1 border px-4 py-2.5 rounded-lg bg-white"
                 >
                     <TbArrowLeft size={18} /> Back to Cards
                 </button>
             </div>
-            <div className="w-full flex items-center max-lg:flex-col justify-between max-lg:grid-cols-1 gap-3 rounded-lg p-3 relative bg-white">
+
+            <div className="flex max-lg:flex-col lg:items-center gap-4 bg-white p-3 rounded-md">
+                {/* Left: Card */}
                 <div className={`w-[420px] max-lg:w-full h-fit rounded-xl shadow-xl shadow-blue-100 ${card.card_currency === 'NGN' ? 'bg-blue-500' : 'bg-gradient-to-b from-blue-950 via-blue-900 to-blue-950'} p-4 text-white`}>
                     <div className="flex justify-between items-center mb-2">
                         <h1 className="text-xl font-light">
@@ -356,53 +332,33 @@ const CardDetails = () => {
                         </div>
                     </div>
                 </div>
-                <div className='bg-white p-4 rounded-lg w-full max-w-[600px]'>
+
+                {/* Right: Controls + Info */}
+                <div className='bg-white p-4 rounded-lg flex-1'>
                     <div className="grid grid-cols-4 gap-2 mb-4">
-                        <button
-                            disabled={handleBtnDisabled()}
-                            onClick={handleFunding}
-                            className={`flex items-center justify-center gap-2 border py-2 px-3 rounded-md transition-all duration-75 ${handleBtnDisabled()
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-gray-50 text-blue-700 hover:bg-gray-100'
-                                }`}
-                        >
-                            <FaMoneyBillWave className="text-lg" />
-                            Fund
+                        <button onClick={openFundingModal} className="flex items-center justify-center gap-2 border py-2 px-3 rounded-md bg-gray-50 hover:bg-gray-100 text-blue-700">
+                            <FaMoneyBillWave /> Fund
                         </button>
-
-                        <button
-                            disabled={handleBtnDisabled()}
-                            onClick={handleWithdraw}
-                            className={`flex items-center justify-center gap-2 border py-2 px-3 rounded-md transition-all duration-75 ${handleBtnDisabled()
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-gray-50 text-orange-500 hover:bg-gray-100'
-                                }`}
-                        >
-                            <FaMoneyCheckAlt className="text-lg" />
-                            Withdraw
+                        <button onClick={openWithdrawalModal} className="flex items-center justify-center gap-2 border py-2 px-3 rounded-md bg-gray-50 hover:bg-gray-100 text-orange-500">
+                            <FaMoneyCheckAlt /> Withdraw
                         </button>
-
                         <button
                             onClick={handleFreezeCard}
-                            disabled={isLoading}
+                            disabled={loading}
                             className={`flex items-center justify-center gap-2 ${card.is_active ? 'text-blue-500' : 'text-green-500'
                                 } border py-2 px-3 rounded-md bg-gray-50 transition-all duration-75 hover:bg-gray-100 disabled:opacity-50`}
                         >
                             <FaSnowflake className="text-lg" />
                             {card.is_active ? 'Freeze' : 'Unfreeze'}
                         </button>
-
-                        <button
-                            onClick={handleDeleteCard}
-                            className="flex items-center justify-center gap-2 text-red-600 border py-2 px-3 rounded-md bg-gray-50 transition-all duration-75 hover:bg-gray-100"
-                        >
-                            <FaTrashAlt className="text-lg" />
-                            Delete
+                        <button onClick={handleDeleteCard} className="flex items-center justify-center gap-2 text-red-600 border py-2 px-3 rounded-md bg-gray-50 hover:bg-gray-100">
+                            <FaTrashAlt /> Delete
                         </button>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-6 max-lg:p-3 border border-gray-100">
+
+                    <div className="border rounded p-4 shadow-sm">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800">Card Details</h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-5 gap-3">
                             <div>
                                 <p className="text-sm text-gray-500">Creation Date</p>
                                 <p className="font-medium">{new Date(card.createdAt).toLocaleDateString()}</p>
@@ -419,19 +375,21 @@ const CardDetails = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Daily Limit</p>
-                                <p className="font-medium">
-                                    {card.current_card_limit} {card.card_currency}
-                                </p>
+                                <p className="font-medium">{card.current_card_limit} {card.card_currency}</p>
                             </div>
+                            {/* <div>
+                                <button className="flex items-center gap-2 border border-gray-300 py-1.5 px-3 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500">
+                                    <IoInformationCircleOutline className="w-4 h-4 text-blue-500" />
+                                    Card Info
+                                </button>
+                            </div> */}
                         </div>
                     </div>
                 </div>
             </div>
-            <CardTransactionTable
-                cardId={cardId}
-                cardCurrency={currency}
-            />
 
+            {/* Transactions */}
+            <CardTransactionTable cardId={cardId} cardCurrency={currency} />
         </motion.div>
     );
 };

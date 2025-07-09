@@ -10,7 +10,7 @@ const Gotv = ({ onClick }) => {
     useEffect(() => {
         const fetchGotvPlans = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/cable-networks?withPlans=true`);
+                const response = await axios.get(`/api/cable-networks?withPlans=true`);
                 const gotvData = response.data.find(network => network.name === "GOTV");
 
                 if (gotvData && gotvData.plans) {
