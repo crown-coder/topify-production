@@ -4,8 +4,11 @@ import axios from 'axios'
 import Logo from '../assets/logo.png'
 import AuthPageLayout from '../components/AuthPageLayout'
 import AlertBox from '../components/Dashboard/small-components/AlertBox'
+import { useAuth } from '../hooks/useAuth'
+
 
 const Login = () => {
+    useAuth({ middleware: 'guest', redirectIfAuthenticated: '/dashboard' })
     const navigate = useNavigate()
     const [formData, setFormData] = useState({
         email: '',
