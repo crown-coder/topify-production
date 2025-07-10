@@ -10,6 +10,7 @@ export const useAuth = ({
 } = {}) => {
     const [user, setUser] = useState(null)
     const [error, setError] = useState(null)
+    const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
 
     const csrf = () => axios.get('/sanctum/csrf-cookie')
@@ -21,7 +22,10 @@ export const useAuth = ({
         } catch (err) {
             if (err.response?.status !== 409) {
                 setError(err.response)
+                setUser(null)
             }
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -39,27 +43,39 @@ export const useAuth = ({
     }
 
     const logout = async () => {
+        // Prevent double logout
+        if (!user) {
+            navigate('/')
+            return
+        }
+
         try {
             await axios.post('/api/logout')
-            console.log("Logout success")
             setUser(null)
-        } catch (_) { }
+        } catch (err) {
+            console.warn("Logout failed or user already logged out")
+        }
+
         navigate('/')
     }
 
+    // Fetch user only on initial mount if shouldCallApi is true
     useEffect(() => {
         if (shouldCallApi) fetchUser()
     }, [])
 
+    // Handle redirection logic
     useEffect(() => {
+        if (loading) return
+
         if (middleware === 'guest' && user) {
             navigate(redirectIfAuthenticated)
         }
 
-        if (middleware === 'auth' && error) {
-            logout()
+        if (middleware === 'auth' && !user) {
+            navigate('/')
         }
-    }, [user, error])
+    }, [user, error, loading])
 
     return {
         user,
