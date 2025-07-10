@@ -6,7 +6,10 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { IoInformationCircleOutline } from "react-icons/io5";
+import MasterLogo from "../../../../assets/Master.png"
+import VisaLogo from "../../../../assets/Visa.png"
+import VerveLogo from "../../../../assets/Verve.png"
+
 import {
     FaMoneyBillWave,
     FaMoneyCheckAlt,
@@ -39,10 +42,10 @@ const fetchCardDetails = async ({ queryKey }) => {
     const card = allCardsRes.data.data.find((c) => c.card_id === cardId);
     if (!card) throw new Error('Card not found');
 
-    console.log("This is the card", card)
-
     const detailRes = await axios.get(`/api/virtual-cards/${card.id}/details`, config);
     const detail = detailRes.data;
+
+    console.log("card details", detail)
 
     return {
         ...detail,
@@ -74,6 +77,18 @@ const CardDetails = () => {
             setTimeout(() => setCopiedField(null), 2000);
         });
     };
+
+    let renderLogo = null;
+
+    const normalizedBrand = card.brand?.toLowerCase();
+
+    if (normalizedBrand === "mastercard" || normalizedBrand === "master card") {
+        renderLogo = <img src={MasterLogo} alt="MasterCard Logo" />;
+    } else if (normalizedBrand === "visa") {
+        renderLogo = <img src={VisaLogo} alt="Visa Logo" />;
+    } else {
+        renderLogo = <img src={VerveLogo} alt="Verve Logo" />;
+    }
 
     const goBack = () => navigate(-1);
 
@@ -151,6 +166,8 @@ const CardDetails = () => {
             setLoading(false);
         }
     };
+
+
 
     const handleFreezeCard = () => {
         openModal(
@@ -279,8 +296,8 @@ const CardDetails = () => {
                         <h1 className="text-xl font-light">
                             Smart<span className="font-semibold">Card</span>
                         </h1>
-                        <div className="w-12 h-12 rounded-full bg-white/20 flex justify-center items-center">
-                            <img src={Logo} alt="logo" className="w-10 h-10" />
+                        <div className="w-12 h-12 flex justify-center items-center">
+                            {renderLogo}
                         </div>
                     </div>
 

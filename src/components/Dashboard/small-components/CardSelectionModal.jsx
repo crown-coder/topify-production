@@ -59,7 +59,7 @@ const CardSelectionModal = ({ cards, onSelect, onClose }) => {
     };
 
     return (
-        <div className="bg-white border border-white/50 shadow-lg rounded-xl p-6 max-lg:p-3 max-w-md w-full">
+        <div className="bg-white border border-white/50 shadow-lg rounded-xl p-3 max-lg:p-3 max-w-md w-full">
             <h2 className="text-xl font-semibold mb-4 max-lg:mb-2">Select Card Type</h2>
             <p className="text-gray-600 mb-6 max-lg:mb-2">Choose the type of virtual card you want to create</p>
             <div className=' h-[500px] overflow-y-scroll'>

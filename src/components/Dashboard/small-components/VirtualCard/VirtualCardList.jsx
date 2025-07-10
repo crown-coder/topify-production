@@ -39,20 +39,30 @@ const fetchCardsByProvider = async (provider) => {
         headers: { 'X-XSRF-TOKEN': xsrf },
         withCredentials: true
     };
+
     const listRes = await axios.get(`/api/Allvirtual-cards?provider=${provider}`, config);
     const cardList = listRes.data.data || [];
+
     if (cardList.length === 0) return [];
 
     const detailRes = await Promise.all(
         cardList.map(card => axios.get(`/api/virtual-cards/${card.id}/details`, config))
     );
 
-    return detailRes.map(r => ({
-        ...r.data,
-        expiry: `${r.data.expiry_month}/${r.data.expiry_year.toString().slice(-2)}`,
-        provider
-    }));
+    return detailRes.map(r => {
+        const cardData = r.data;
+
+        // console.log('card data', cardData)
+
+        return {
+            ...cardData,
+            expiry: `${cardData.expiry_month}/${cardData.expiry_year.toString().slice(-2)}`,
+            brand: cardData.brand || 'Unknown', // extract brand from response
+            provider
+        };
+    });
 };
+
 
 const VirtualCardList = () => {
     const [selectedCard, setSelectedCard] = useState(null);
@@ -238,6 +248,7 @@ const VirtualCardList = () => {
                             name={card.card_name}
                             expiry={card.expiry}
                             cvv={card.cvv}
+                            brand={card.brand}
                             balance={parseFloat(card.balance)}
                             currency={card.card_currency}
                             cardProvider={cardProvider}

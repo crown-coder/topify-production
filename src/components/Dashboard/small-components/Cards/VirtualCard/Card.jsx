@@ -1,12 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Logo from '../../../../../assets/logo.png';
 import MetalPhoto from '../../../../../assets/metal.png';
 import { useModal } from '../../../../ModalContext';
 import CardLayout from '../CardLayout';
 import CardFundingForm from '../../Forms/CardFundingForm';
+import MasterLogo from "../../../../../assets/Master.png"
+import VisaLogo from "../../../../../assets/Visa.png"
+import VerveLogo from "../../../../../assets/Verve.png"
 
-const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, cvv, balance, currency, lastFour, cardName, cardProvider }) => {
+const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, cvv, balance, currency, lastFour, cardName, cardProvider, brand }) => {
     const { openModal, closeModal } = useModal();
     const navigate = useNavigate();
 
@@ -44,6 +46,18 @@ const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, 
         }
     };
 
+    let renderLogo = null;
+
+    const normalizedBrand = brand?.toLowerCase();
+
+    if (normalizedBrand === "mastercard" || normalizedBrand === "master card") {
+        renderLogo = <img src={MasterLogo} alt="MasterCard Logo" />;
+    } else if (normalizedBrand === "visa") {
+        renderLogo = <img src={VisaLogo} alt="Visa Logo" />;
+    } else {
+        renderLogo = <img src={VerveLogo} alt="Verve Logo" />;
+    }
+
     return (
         <div
             className={`min-w-[220px] p-3 min-h-[180px] rounded-xl relative shadow-md overflow-hidden cursor-pointer ${className}`}
@@ -51,20 +65,13 @@ const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, 
             data-card-id={cardId} // Add data attribute for easy DOM inspection
         >
             {/* Watermark Image */}
-            {/* <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                <img
-                    src={Logo}
-                    alt="Smart Logo"
-                    className="w-full h-full object-contain"
-                />
-            </div> */}
 
             {/* Card Content */}
             <div className="relative z-10 flex flex-col gap-1 h-full">
                 <div className='flex justify-between items-center'>
-                    <h1 className='text-white text-xl font-light'>Smart <span className='font-bold'>Card</span></h1>
-                    <div className='w-[45px] h-[45px] flex justify-center items-center bg-white/20 rounded-full'>
-                        <img src={Logo} alt="Smart Logo" className="w-8 h-8" />
+                    <h1 className='text-white text-xl font-light'>Virtual <span className='font-bold'>Card</span></h1>
+                    <div className='w-[45px] h-[45px] flex justify-center items-center'>
+                        {renderLogo}
                     </div>
                 </div>
 
@@ -91,6 +98,7 @@ const Card = ({ className, cardData, onClick, cardNumber, cardId, name, expiry, 
                     >
                         Fund Card
                     </button>
+                    {/* <p className='text-white font-bold italic'>{brand}</p> */}
                 </div>
             </div>
         </div>

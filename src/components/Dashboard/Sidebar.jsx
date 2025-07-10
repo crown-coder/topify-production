@@ -1,6 +1,9 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { NAVIGATION_ITEMS } from "../../constants/constants";
 import { Link, useLocation } from "react-router-dom";
 import Logo from "../../assets/logo.png";
+import { MdOutlineAdminPanelSettings } from "react-icons/md";
 
 const Sidebar = ({
     isSidebarOpen,
@@ -16,6 +19,34 @@ const Sidebar = ({
         if (closeModal) closeModal();
     };
 
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    const fetchUserData = async () => {
+        try {
+            const response = await axios.get('/api/api2/user', {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                withCredentials: true,
+            });
+
+            if (response?.data?.is_admin !== undefined) {
+                setIsAdmin(response.data.is_admin);
+            } else {
+                console.warn('is_admin not found in response:', response.data);
+            }
+
+        } catch (error) {
+            console.error("Error fetching user data", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+
     return (
         <aside
             className={`fixed top-2 left-2 h-screen transition-all duration-100 ${iconsOnly ? "w-10px" : "w-[225px]"
@@ -25,6 +56,16 @@ const Sidebar = ({
             <div className="logo mb-6">
                 <img src={Logo} width={50} height={42} alt="Logo" />
             </div>
+
+            {/* Admin Button */}
+            <button
+                onClick={() => window.location.href = 'https://app.topify.ng/admin/dashboard'}
+                className={`py-1 px-3 rounded-md bg-red-500 text-white items-center gap-2 hover:bg-red-600 duration-75 mb-2 ${isAdmin ? 'flex' : 'hidden'}`}
+            >
+                <MdOutlineAdminPanelSettings className="text-xl" />
+                <span className={`${iconsOnly ? 'hidden' : ''}`}>Admin Panel</span>
+            </button>
+
 
             {NAVIGATION_ITEMS.map((category, index) => (
                 <div key={index}>
