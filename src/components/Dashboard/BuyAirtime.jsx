@@ -3,7 +3,7 @@ import GridLayout from "./small-components/GridLayout";
 import NineMobile from "../../assets/9mobile.png";
 import Airtel from "../../assets/Airtel.png";
 import Glo from "../../assets/Glo.png";
-import MTN from "../../assets/MTN.png";
+import MTN from "../../assets/mtn.png";
 import { motion } from "framer-motion";
 
 const BuyAirtime = () => {
