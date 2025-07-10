@@ -78,18 +78,6 @@ const CardDetails = () => {
         });
     };
 
-    let renderLogo = null;
-
-    const normalizedBrand = card.brand?.toLowerCase();
-
-    if (normalizedBrand === "mastercard" || normalizedBrand === "master card") {
-        renderLogo = <img src={MasterLogo} alt="MasterCard Logo" />;
-    } else if (normalizedBrand === "visa") {
-        renderLogo = <img src={VisaLogo} alt="Visa Logo" />;
-    } else {
-        renderLogo = <img src={VerveLogo} alt="Verve Logo" />;
-    }
-
     const goBack = () => navigate(-1);
 
     const openFundingModal = () => {
@@ -268,6 +256,18 @@ const CardDetails = () => {
     if (isLoading) return renderSkeleton();
     if (isError) return <div className="text-center text-red-500 py-10">{error?.message}</div>;
     if (!card) return <div className="text-center text-gray-400 py-10">No card data available</div>;
+
+    let renderLogo = null;
+
+    const normalizedBrand = card.brand?.toLowerCase();
+
+    if (normalizedBrand === "mastercard" || normalizedBrand === "master card") {
+        renderLogo = <img src={MasterLogo} alt="MasterCard Logo" />;
+    } else if (normalizedBrand === "visa") {
+        renderLogo = <img src={VisaLogo} alt="Visa Logo" />;
+    } else {
+        renderLogo = <img src={VerveLogo} alt="Verve Logo" />;
+    }
 
     return (
         <motion.div className="p-2">
