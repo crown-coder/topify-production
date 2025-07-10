@@ -8,7 +8,7 @@ const PricingCard = ({ icon, plans = [] }) => {
     const rest = plans.slice(8)
 
     return (
-        <div className='rounded-xl flex flex-col items-center gap-4 py-10 bg-[#006CB8] z-20'>
+        <div className='rounded-xl flex flex-col items-center gap-4 py-10 bg-[#006CB8]'>
             <img src={icon} className='w-[60px] h-[60px]' alt="Network logo" />
             <table className='w-full'>
                 <thead>
