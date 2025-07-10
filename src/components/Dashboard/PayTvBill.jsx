@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { motion } from "framer-motion";
 import GOTV from '../../assets/gotv.png'
-import DSTV from '../../assets/dstv.png'
-import STARTIMES from '../../assets/startimes.png'
+import DSTV from '../../assets/Dstv.png'
+import STARTIMES from '../../assets/Startimes.png'
 import Gotv from './small-components/Gotv';
 import Startimes from './small-components/Startimes';
 import Dstv from './small-components/Dstv';
