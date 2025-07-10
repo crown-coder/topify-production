@@ -6,7 +6,6 @@ import { IoIosCloseCircle } from "react-icons/io";
 import AlertBox from '../AlertBox';
 import { TiDocumentText } from "react-icons/ti";
 import { useNavigate } from 'react-router-dom';
-import { CheckCircleIcon } from '@heroicons/react/20/solid';
 import { FaCircleCheck } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
 const getCardGradient = (index) => {
@@ -817,7 +816,7 @@ const CreateVirtualCard = ({ onCardCreated }) => {
                                                     <h3 className="font-bold text-lg">{card.name}</h3>
                                                 </div>
                                                 {selectedCard?.id === card.id && (
-                                                    <CheckCircleIcon className="h-5 w-5 text-white" />
+                                                    <FaCheckCircle className="h-5 w-5 text-white" />
                                                 )}
                                             </div>
 
