@@ -13,11 +13,11 @@ import { CiCreditCard2 } from "react-icons/ci";
 import { CiSettings } from "react-icons/ci";
 import { CiLogout } from "react-icons/ci";
 
-import AEDC from '../assets/AEDC.png'
+import AEDC from '../assets/aedc.png'
 import BEDC from '../assets/beddc.png'
 import KEDCO from '../assets/kedco.png'
 import JED from '../assets/jed.png'
-import YEDC from '../assets/YEDC.png'
+import YEDC from '../assets/yedc.png'
 
 export const electricCompany = [
   {
