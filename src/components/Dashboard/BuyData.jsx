@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import NineMobile from "../../assets/9mobile.png";
 import Airtel from "../../assets/Airtel.png";
 import Glo from "../../assets/Glo.png";
-import MTN from "../../assets/MTN.png";
+import MTN from "../../assets/mtn.png";
 import Button from "../../components/Dashboard/small-components/Button";
 import BuyDataCard from "./small-components/BuyDataCard";
 import MoreDataCard from "./small-components/Cards/MoreDataCard";
