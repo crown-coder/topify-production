@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Logo from '../assets/logo.png'
 import AuthPageLayout from '../components/AuthPageLayout'
+import { useAuth } from '../hooks/useAuth'
 
 const ForgotPassword = () => {
+    useAuth({ middleware: 'guest', redirectIfAuthenticated: '/dashboard' })
     const navigate = useNavigate()
     const [formData, setFormData] = useState({
         email: ''
