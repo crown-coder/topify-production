@@ -7,10 +7,17 @@ const ProtectedRoute = ({ children }) => {
     const { user } = useAuth({ middleware: 'auth' })
 
     if (user === null) {
+        // Still checking authentication status
         return <Loader global="true" />
     }
 
-    return user ? children : <Navigate to="/login" replace />
+    // If not authenticated, redirect
+    if (!user) {
+        return <Navigate to="/login" replace />
+    }
+
+    // Authenticated, show protected content
+    return children
 }
 
 export default ProtectedRoute
